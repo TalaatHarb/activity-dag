@@ -8,9 +8,9 @@ import java.util.UUID;
 import net.talaatharb.activitydag.model.ActivityModel;
 
 /** Classic forward/backward pass computing early/late times in day offsets. */
-final class CriticalPath {
-    record Times(int earlyStart, int earlyFinish, int lateStart, int lateFinish) {
-        int slack() {
+public final class CriticalPath {
+    public record Times(int earlyStart, int earlyFinish, int lateStart, int lateFinish) {
+        public int slack() {
             return lateStart - earlyStart;
         }
     }
@@ -18,7 +18,7 @@ final class CriticalPath {
     private final Map<UUID, Times> times = new HashMap<>();
     private final int projectDuration;
 
-    CriticalPath(List<ActivityModel> activities) {
+    public CriticalPath(List<ActivityModel> activities) {
         List<ActivityModel> order = DagSupport.topologicalOrder(activities);
         Map<UUID, Integer> es = new HashMap<>();
         Map<UUID, Integer> ef = new HashMap<>();
@@ -51,11 +51,11 @@ final class CriticalPath {
         this.projectDuration = total;
     }
 
-    Times times(UUID id) {
+    public Times times(UUID id) {
         return times.get(id);
     }
 
-    int projectDuration() {
+    public int projectDuration() {
         return projectDuration;
     }
 }

@@ -46,6 +46,9 @@ public class ActivityService {
         if (activity.getResources() < 0) {
             throw new IllegalArgumentException("Resources must not be negative");
         }
+        if (activity.getImpact() < 0) {
+            throw new IllegalArgumentException("Impact must not be negative");
+        }
         if (activity.getStartDate() != null && activity.getEndDate() != null
                 && activity.getEndDate().isBefore(activity.getStartDate())) {
             throw new IllegalArgumentException("End date must not be before start date");

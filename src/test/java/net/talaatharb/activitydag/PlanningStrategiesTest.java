@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import net.talaatharb.activitydag.model.ActivityModel;
 import net.talaatharb.activitydag.planning.CpmStrategy;
+import net.talaatharb.activitydag.planning.HighImpactStrategy;
 import net.talaatharb.activitydag.planning.LowestResourcesStrategy;
 import net.talaatharb.activitydag.planning.MaximumResourcesStrategy;
 import net.talaatharb.activitydag.planning.PlanResult;
@@ -87,5 +88,33 @@ class PlanningStrategiesTest {
         ActivityModel b = activity("B", 1, 1, a);
         a.getDependencies().add(b.getId());
         assertThrows(IllegalStateException.class, () -> new CpmStrategy().plan(List.of(a, b), START));
+    }
+
+    @Test
+    void highImpactStrategyPrioritisesImpactAndComputesPercent() {
+        ActivityModel low = activity("Low", 2, 3);
+        low.setImpact(10);
+        ActivityModel high = activity("High", 2, 3);
+        high.setImpact(30);
+        List<ActivityModel> all = List.of(low, high);
+
+        PlanResult r = new HighImpactStrategy().plan(all, START);
+        assertEquals(0, find(r, "High").startOffset());
+        assertEquals(2, find(r, "Low").startOffset());
+        assertEquals(75.0, find(r, "High").impactPercent(), 0.001);
+        assertEquals(25.0, find(r, "Low").impactPercent(), 0.001);
+    }
+
+    @Test
+    void highImpactStrategyBoostsPrerequisitesOfHighImpactWork() {
+        ActivityModel prereq = activity("Z-prereq", 1, 2);
+        ActivityModel big = activity("Big", 1, 2, prereq);
+        big.setImpact(50);
+        ActivityModel other = activity("A-other", 1, 2);
+        other.setImpact(5);
+        PlanResult r = new HighImpactStrategy().plan(List.of(other, big, prereq), START);
+        assertEquals(0, find(r, "Z-prereq").startOffset());
+        assertEquals(1, find(r, "Big").startOffset());
+        assertEquals(2, find(r, "A-other").startOffset());
     }
 }

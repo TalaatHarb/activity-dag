@@ -29,9 +29,7 @@ public class LowestResourcesStrategy implements PlanningStrategy {
     public PlanResult plan(List<ActivityModel> activities, LocalDate projectStart) {
         CriticalPath cpm = new CriticalPath(activities);
         int cap = activities.stream().mapToInt(ActivityModel::getResources).max().orElse(0);
-        Comparator<ActivityModel> priority = Comparator
-                .comparingInt((ActivityModel a) -> cpm.times(a.getId()).lateFinish())
-                .thenComparing(a -> a.getName() == null ? "" : a.getName());
+        Comparator<ActivityModel> priority = priority(activities, cpm);
 
         Map<UUID, Integer> start = new HashMap<>();
         Map<UUID, Integer> end = new HashMap<>();
@@ -84,6 +82,12 @@ public class LowestResourcesStrategy implements PlanningStrategy {
             time = next;
         }
         return PlanAssembler.assemble(activities, start, cpm, projectStart);
+    }
+
+    /** Order in which ready activities compete for the resource cap; earlier wins. */
+    protected Comparator<ActivityModel> priority(List<ActivityModel> activities, CriticalPath cpm) {
+        return Comparator.comparingInt((ActivityModel a) -> cpm.times(a.getId()).lateFinish())
+                .thenComparing(a -> a.getName() == null ? "" : a.getName());
     }
 
     private static boolean isKnown(List<ActivityModel> activities, UUID id) {

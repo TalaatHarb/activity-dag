@@ -5,6 +5,9 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SplitPane?>
+<?import net.talaatharb.activitydag.ui.graph.GanttChart?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
@@ -22,14 +25,20 @@
         <Button fx:id="applyButton" text="Apply dates to activities" onAction="#onApply"/>
     </HBox>
     <Label fx:id="summaryLabel"/>
-    <TableView fx:id="resultTable" VBox.vgrow="ALWAYS">
+    <SplitPane orientation="VERTICAL" dividerPositions="0.55" VBox.vgrow="ALWAYS">
+    <ScrollPane>
+        <GanttChart fx:id="ganttChart"/>
+    </ScrollPane>
+    <TableView fx:id="resultTable">
         <columns>
             <TableColumn fx:id="nameColumn" text="Activity" prefWidth="200"/>
             <TableColumn fx:id="startColumn" text="Start" prefWidth="110"/>
             <TableColumn fx:id="endColumn" text="End" prefWidth="110"/>
             <TableColumn fx:id="resourcesColumn" text="Resources" prefWidth="90"/>
+            <TableColumn fx:id="impactColumn" text="Impact %" prefWidth="80"/>
             <TableColumn fx:id="slackColumn" text="Slack (d)" prefWidth="90"/>
             <TableColumn fx:id="criticalColumn" text="Critical" prefWidth="80"/>
         </columns>
     </TableView>
+    </SplitPane>
 </VBox>

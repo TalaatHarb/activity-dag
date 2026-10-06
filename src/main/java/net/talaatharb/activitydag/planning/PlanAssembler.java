@@ -13,8 +13,13 @@ final class PlanAssembler {
     private PlanAssembler() {
     }
 
+    static double impactPercent(ActivityModel a, double totalImpact) {
+        return totalImpact <= 0 ? 0 : Math.max(0, a.getImpact()) / totalImpact * 100.0;
+    }
+
     static PlanResult assemble(List<ActivityModel> activities, Map<UUID, Integer> startOffsets, CriticalPath cpm,
             LocalDate projectStart) {
+        double totalImpact = activities.stream().mapToDouble(a -> Math.max(0, a.getImpact())).sum();
         List<PlannedActivity> planned = new ArrayList<>();
         int total = 0;
         for (ActivityModel a : DagSupport.topologicalOrder(activities)) {
@@ -23,7 +28,7 @@ final class PlanAssembler {
             total = Math.max(total, end);
             int slack = cpm.times(a.getId()).slack();
             planned.add(new PlannedActivity(a.getId(), a.getName(), start, end, projectStart.plusDays(start),
-                    projectStart.plusDays(end), a.getResources(), slack, slack == 0));
+                    projectStart.plusDays(end), a.getResources(), impactPercent(a, totalImpact), slack, slack == 0));
         }
         int peak = 0;
         for (PlannedActivity p : planned) {

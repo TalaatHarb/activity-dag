@@ -17,6 +17,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import net.talaatharb.activitydag.planning.PlanResult;
+import net.talaatharb.activitydag.ui.graph.GanttChart;
 import net.talaatharb.activitydag.planning.PlannedActivity;
 
 /** Apply a planning strategy to the current project's activities and optionally store the schedule. */
@@ -28,11 +29,13 @@ public class PlanningTabController {
     @FXML private DatePicker startPicker;
     @FXML private Button applyButton;
     @FXML private Label summaryLabel;
+    @FXML private GanttChart ganttChart;
     @FXML private TableView<PlannedActivity> resultTable;
     @FXML private TableColumn<PlannedActivity, String> nameColumn;
     @FXML private TableColumn<PlannedActivity, LocalDate> startColumn;
     @FXML private TableColumn<PlannedActivity, LocalDate> endColumn;
     @FXML private TableColumn<PlannedActivity, Number> resourcesColumn;
+    @FXML private TableColumn<PlannedActivity, Number> impactColumn;
     @FXML private TableColumn<PlannedActivity, Number> slackColumn;
     @FXML private TableColumn<PlannedActivity, String> criticalColumn;
 
@@ -50,6 +53,7 @@ public class PlanningTabController {
         startColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().startDate()));
         endColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().endDate()));
         resourcesColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().resources()));
+        impactColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(Math.round(c.getValue().impactPercent() * 10) / 10.0));
         slackColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().slack()));
         criticalColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().critical() ? "Yes" : ""));
         context.currentProjectProperty().addListener((obs, old, now) -> clear());
@@ -60,6 +64,7 @@ public class PlanningTabController {
     private void clear() {
         lastResult = null;
         resultTable.getItems().clear();
+        ganttChart.show(null);
         applyButton.setDisable(true);
         summaryLabel.setText("");
     }
@@ -69,6 +74,7 @@ public class PlanningTabController {
         try {
             lastResult = context.plan(strategyCombo.getValue(), startPicker.getValue());
             resultTable.getItems().setAll(lastResult.activities());
+            ganttChart.show(lastResult);
             summaryLabel.setText("Total duration: " + lastResult.totalDays() + " days, peak resources: "
                     + lastResult.peakResources());
             applyButton.setDisable(lastResult.activities().isEmpty());

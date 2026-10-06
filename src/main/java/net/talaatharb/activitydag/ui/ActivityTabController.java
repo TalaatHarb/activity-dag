@@ -40,11 +40,13 @@ public class ActivityTabController {
     @FXML private TableColumn<ActivityDto, LocalDate> startColumn;
     @FXML private TableColumn<ActivityDto, LocalDate> endColumn;
     @FXML private TableColumn<ActivityDto, Number> resourcesColumn;
+    @FXML private TableColumn<ActivityDto, Number> impactColumn;
     @FXML private TableColumn<ActivityDto, String> dependsOnColumn;
     @FXML private TextField nameField;
     @FXML private TextArea descriptionArea;
     @FXML private TextField durationField;
     @FXML private TextField resourcesField;
+    @FXML private TextField impactField;
     @FXML private DatePicker startPicker;
     @FXML private DatePicker endPicker;
     @FXML private ListView<ActivityDto> dependenciesList;
@@ -63,6 +65,7 @@ public class ActivityTabController {
         startColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getStartDate()));
         endColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getEndDate()));
         resourcesColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getResources()));
+        impactColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getImpact()));
         dependsOnColumn.setCellValueFactory(c -> new SimpleStringProperty(dependencyNames(c.getValue())));
 
         dependenciesList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -107,6 +110,7 @@ public class ActivityTabController {
         descriptionArea.setText(dto.getDescription());
         durationField.setText(Long.toString(dto.getDuration()));
         resourcesField.setText(Integer.toString(dto.getResources()));
+        impactField.setText(Integer.toString(dto.getImpact()));
         startPicker.setValue(dto.getStartDate());
         endPicker.setValue(dto.getEndDate());
         metadataArea.setText(dto.getMetadata().entrySet().stream().map(e -> e.getKey() + "=" + e.getValue())
@@ -122,6 +126,7 @@ public class ActivityTabController {
         descriptionArea.clear();
         durationField.setText("1");
         resourcesField.setText("1");
+        impactField.setText("1");
         startPicker.setValue(null);
         endPicker.setValue(null);
         metadataArea.clear();
@@ -166,6 +171,7 @@ public class ActivityTabController {
             dto.setDescription(descriptionArea.getText());
             dto.setDuration(Long.parseLong(durationField.getText().trim()));
             dto.setResources(Integer.parseInt(resourcesField.getText().trim()));
+            dto.setImpact(Integer.parseInt(impactField.getText().trim()));
             dto.setStartDate(startPicker.getValue());
             dto.setEndDate(endPicker.getValue());
             dto.setMetadata(parseMetadata(metadataArea.getText()));
@@ -175,7 +181,7 @@ public class ActivityTabController {
             editingId = saved.getId();
             refresh();
         } catch (NumberFormatException e) {
-            error("Duration and resources must be whole numbers.");
+            error("Duration, resources and impact must be whole numbers.");
         } catch (IllegalArgumentException e) {
             error(e.getMessage());
         }

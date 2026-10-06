@@ -26,6 +26,7 @@
                 <TableColumn fx:id="startColumn" text="Start" prefWidth="95"/>
                 <TableColumn fx:id="endColumn" text="End" prefWidth="95"/>
                 <TableColumn fx:id="resourcesColumn" text="Resources" prefWidth="80"/>
+                <TableColumn fx:id="impactColumn" text="Impact" prefWidth="70"/>
                 <TableColumn fx:id="dependsOnColumn" text="Depends on" prefWidth="180"/>
             </columns>
         </TableView>
@@ -58,6 +59,9 @@
             <Label text="Metadata" GridPane.rowIndex="7"/>
             <TextArea fx:id="metadataArea" prefRowCount="4" promptText="key=value, one per line"
                       GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+            <Label text="Impact" GridPane.rowIndex="8"/>
+            <TextField fx:id="impactField" promptText="relative value, e.g. 1-100" GridPane.rowIndex="8"
+                       GridPane.columnIndex="1"/>
         </GridPane>
         <Button text="Save" defaultButton="true" onAction="#onSave"/>
     </VBox>

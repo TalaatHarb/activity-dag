@@ -13,8 +13,9 @@ public class PlanningService {
     private final List<PlanningStrategy> strategies;
 
     @Inject
-    public PlanningService(CpmStrategy cpm, LowestResourcesStrategy lowest, MaximumResourcesStrategy maximum) {
-        this.strategies = List.of(cpm, lowest, maximum);
+    public PlanningService(CpmStrategy cpm, LowestResourcesStrategy lowest, MaximumResourcesStrategy maximum,
+            HighImpactStrategy highImpact) {
+        this.strategies = List.of(cpm, lowest, maximum, highImpact);
     }
 
     public List<String> getStrategyNames() {
