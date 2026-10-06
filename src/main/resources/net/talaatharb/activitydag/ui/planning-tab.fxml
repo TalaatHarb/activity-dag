@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SplitPane?>
+<?import net.talaatharb.activitydag.ui.graph.GanttChart?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="8" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.talaatharb.activitydag.ui.PlanningTabController">
+    <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+    <HBox spacing="8">
+        <Label text="Strategy:"/>
+        <ComboBox fx:id="strategyCombo" prefWidth="260"/>
+        <Label text="Project start:"/>
+        <DatePicker fx:id="startPicker"/>
+        <Button text="Plan" onAction="#onPlan"/>
+        <Button fx:id="applyButton" text="Apply dates to activities" onAction="#onApply"/>
+    </HBox>
+    <Label fx:id="summaryLabel"/>
+    <SplitPane orientation="VERTICAL" dividerPositions="0.55" VBox.vgrow="ALWAYS">
+    <ScrollPane>
+        <GanttChart fx:id="ganttChart"/>
+    </ScrollPane>
+    <TableView fx:id="resultTable">
+        <columns>
+            <TableColumn fx:id="nameColumn" text="Activity" prefWidth="200"/>
+            <TableColumn fx:id="startColumn" text="Start" prefWidth="110"/>
+            <TableColumn fx:id="endColumn" text="End" prefWidth="110"/>
+            <TableColumn fx:id="resourcesColumn" text="Resources" prefWidth="90"/>
+            <TableColumn fx:id="impactColumn" text="Impact %" prefWidth="80"/>
+            <TableColumn fx:id="slackColumn" text="Slack (d)" prefWidth="90"/>
+            <TableColumn fx:id="criticalColumn" text="Critical" prefWidth="80"/>
+        </columns>
+    </TableView>
+    </SplitPane>
+</VBox>

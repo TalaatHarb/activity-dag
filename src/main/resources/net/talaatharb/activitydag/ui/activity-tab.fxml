@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<SplitPane dividerPositions="0.55" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+           fx:controller="net.talaatharb.activitydag.ui.ActivityTabController">
+    <VBox spacing="8">
+        <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+        <TableView fx:id="table" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="nameColumn" text="Name" prefWidth="160"/>
+                <TableColumn fx:id="durationColumn" text="Duration (d)" prefWidth="90"/>
+                <TableColumn fx:id="startColumn" text="Start" prefWidth="95"/>
+                <TableColumn fx:id="endColumn" text="End" prefWidth="95"/>
+                <TableColumn fx:id="resourcesColumn" text="Resources" prefWidth="80"/>
+                <TableColumn fx:id="impactColumn" text="Impact" prefWidth="70"/>
+                <TableColumn fx:id="dependsOnColumn" text="Depends on" prefWidth="180"/>
+            </columns>
+        </TableView>
+        <HBox spacing="8">
+            <Button text="New" onAction="#onNew"/>
+            <Button fx:id="deleteButton" text="Delete" onAction="#onDelete"/>
+        </HBox>
+    </VBox>
+    <VBox spacing="8">
+        <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+        <GridPane hgap="8" vgap="8">
+            <columnConstraints>
+                <ColumnConstraints minWidth="90"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+            <Label text="Name" GridPane.rowIndex="0"/>
+            <TextField fx:id="nameField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+            <Label text="Description" GridPane.rowIndex="1"/>
+            <TextArea fx:id="descriptionArea" prefRowCount="2" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+            <Label text="Duration (days)" GridPane.rowIndex="2"/>
+            <TextField fx:id="durationField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+            <Label text="Resources" GridPane.rowIndex="3"/>
+            <TextField fx:id="resourcesField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+            <Label text="Start date" GridPane.rowIndex="4"/>
+            <DatePicker fx:id="startPicker" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+            <Label text="End date" GridPane.rowIndex="5"/>
+            <DatePicker fx:id="endPicker" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+            <Label text="Depends on" GridPane.rowIndex="6"/>
+            <ListView fx:id="dependenciesList" prefHeight="140" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+            <Label text="Metadata" GridPane.rowIndex="7"/>
+            <TextArea fx:id="metadataArea" prefRowCount="4" promptText="key=value, one per line"
+                      GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+            <Label text="Impact" GridPane.rowIndex="8"/>
+            <TextField fx:id="impactField" promptText="relative value, e.g. 1-100" GridPane.rowIndex="8"
+                       GridPane.columnIndex="1"/>
+        </GridPane>
+        <Button text="Save" defaultButton="true" onAction="#onSave"/>
+    </VBox>
+</SplitPane>
