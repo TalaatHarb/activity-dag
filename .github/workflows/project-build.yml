@@ -4,6 +4,9 @@ on:
     branches: [ main, master ]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build-project:
     name: Build project
