@@ -56,7 +56,7 @@ public class LowestResourcesStrategy implements PlanningStrategy {
                 }
                 ready.sort(priority);
                 for (ActivityModel a : ready) {
-                    int duration = (int) Math.max(0, a.getDuration());
+                    int duration = Math.toIntExact(a.durationInMinutes());
                     if (duration == 0 || running + a.getResources() <= cap) {
                         start.put(a.getId(), time);
                         end.put(a.getId(), time + duration);

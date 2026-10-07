@@ -7,12 +7,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import net.talaatharb.activitydag.model.DurationUnit;
+
 public class ActivityDto extends BaseDto {
     private UUID projectId;
     private String name;
     private String description;
     private Set<UUID> dependencies = new HashSet<>();
     private long duration;
+    private DurationUnit durationUnit = DurationUnit.DAYS;
     private LocalDate startDate;
     private LocalDate endDate;
     private int resources;
@@ -29,6 +32,13 @@ public class ActivityDto extends BaseDto {
     public void setDependencies(Set<UUID> dependencies) { this.dependencies = dependencies; }
     public long getDuration() { return duration; }
     public void setDuration(long duration) { this.duration = duration; }
+    public DurationUnit getDurationUnit() { return durationUnit; }
+    public void setDurationUnit(DurationUnit durationUnit) { this.durationUnit = durationUnit; }
+
+    /** Human readable duration, e.g. "3 hour(s)". */
+    public String durationText() {
+        return duration + " " + (durationUnit == null ? DurationUnit.DAYS : durationUnit);
+    }
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getEndDate() { return endDate; }

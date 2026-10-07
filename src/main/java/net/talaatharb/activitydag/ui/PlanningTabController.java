@@ -1,6 +1,7 @@
 package net.talaatharb.activitydag.ui;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import com.google.inject.Inject;
 
@@ -16,12 +17,15 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import net.talaatharb.activitydag.model.DurationUnit;
 import net.talaatharb.activitydag.planning.PlanResult;
 import net.talaatharb.activitydag.ui.graph.GanttChart;
 import net.talaatharb.activitydag.planning.PlannedActivity;
 
 /** Apply a planning strategy to the current project's activities and optionally store the schedule. */
 public class PlanningTabController {
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     private final ProjectContext context;
     private PlanResult lastResult;
 
@@ -32,11 +36,11 @@ public class PlanningTabController {
     @FXML private GanttChart ganttChart;
     @FXML private TableView<PlannedActivity> resultTable;
     @FXML private TableColumn<PlannedActivity, String> nameColumn;
-    @FXML private TableColumn<PlannedActivity, LocalDate> startColumn;
-    @FXML private TableColumn<PlannedActivity, LocalDate> endColumn;
+    @FXML private TableColumn<PlannedActivity, String> startColumn;
+    @FXML private TableColumn<PlannedActivity, String> endColumn;
     @FXML private TableColumn<PlannedActivity, Number> resourcesColumn;
     @FXML private TableColumn<PlannedActivity, Number> impactColumn;
-    @FXML private TableColumn<PlannedActivity, Number> slackColumn;
+    @FXML private TableColumn<PlannedActivity, String> slackColumn;
     @FXML private TableColumn<PlannedActivity, String> criticalColumn;
 
     @Inject
@@ -50,11 +54,11 @@ public class PlanningTabController {
         strategyCombo.getSelectionModel().selectFirst();
         startPicker.setValue(LocalDate.now());
         nameColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().name()));
-        startColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().startDate()));
-        endColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().endDate()));
+        startColumn.setCellValueFactory(c -> new SimpleStringProperty(TIME_FORMAT.format(c.getValue().start())));
+        endColumn.setCellValueFactory(c -> new SimpleStringProperty(TIME_FORMAT.format(c.getValue().end())));
         resourcesColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().resources()));
         impactColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(Math.round(c.getValue().impactPercent() * 10) / 10.0));
-        slackColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().slack()));
+        slackColumn.setCellValueFactory(c -> new SimpleStringProperty(DurationUnit.format(c.getValue().slack())));
         criticalColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().critical() ? "Yes" : ""));
         context.currentProjectProperty().addListener((obs, old, now) -> clear());
         context.getActivities().addListener((javafx.collections.ListChangeListener<Object>) c -> clear());
@@ -75,7 +79,7 @@ public class PlanningTabController {
             lastResult = context.plan(strategyCombo.getValue(), startPicker.getValue());
             resultTable.getItems().setAll(lastResult.activities());
             ganttChart.show(lastResult);
-            summaryLabel.setText("Total duration: " + lastResult.totalDays() + " days, peak resources: "
+            summaryLabel.setText("Total duration: " + DurationUnit.format(lastResult.totalMinutes()) + ", peak resources: "
                     + lastResult.peakResources());
             applyButton.setDisable(lastResult.activities().isEmpty());
         } catch (RuntimeException e) {

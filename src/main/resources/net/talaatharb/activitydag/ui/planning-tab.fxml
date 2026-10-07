@@ -32,11 +32,11 @@
     <TableView fx:id="resultTable">
         <columns>
             <TableColumn fx:id="nameColumn" text="Activity" prefWidth="200"/>
-            <TableColumn fx:id="startColumn" text="Start" prefWidth="110"/>
-            <TableColumn fx:id="endColumn" text="End" prefWidth="110"/>
+            <TableColumn fx:id="startColumn" text="Start" prefWidth="130"/>
+            <TableColumn fx:id="endColumn" text="End" prefWidth="130"/>
             <TableColumn fx:id="resourcesColumn" text="Resources" prefWidth="90"/>
             <TableColumn fx:id="impactColumn" text="Impact %" prefWidth="80"/>
-            <TableColumn fx:id="slackColumn" text="Slack (d)" prefWidth="90"/>
+            <TableColumn fx:id="slackColumn" text="Slack" prefWidth="90"/>
             <TableColumn fx:id="criticalColumn" text="Critical" prefWidth="80"/>
         </columns>
     </TableView>

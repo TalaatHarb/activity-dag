@@ -24,11 +24,12 @@ final class PlanAssembler {
         int total = 0;
         for (ActivityModel a : DagSupport.topologicalOrder(activities)) {
             int start = startOffsets.get(a.getId());
-            int end = start + (int) Math.max(0, a.getDuration());
+            int end = start + Math.toIntExact(a.durationInMinutes());
             total = Math.max(total, end);
             int slack = cpm.times(a.getId()).slack();
-            planned.add(new PlannedActivity(a.getId(), a.getName(), start, end, projectStart.plusDays(start),
-                    projectStart.plusDays(end), a.getResources(), impactPercent(a, totalImpact), slack, slack == 0));
+            planned.add(new PlannedActivity(a.getId(), a.getName(), start, end,
+                    projectStart.atStartOfDay().plusMinutes(start), projectStart.atStartOfDay().plusMinutes(end),
+                    a.getResources(), impactPercent(a, totalImpact), slack, slack == 0));
         }
         int peak = 0;
         for (PlannedActivity p : planned) {

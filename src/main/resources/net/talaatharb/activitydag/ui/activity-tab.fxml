@@ -2,9 +2,11 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -22,7 +24,7 @@
         <TableView fx:id="table" VBox.vgrow="ALWAYS">
             <columns>
                 <TableColumn fx:id="nameColumn" text="Name" prefWidth="160"/>
-                <TableColumn fx:id="durationColumn" text="Duration (d)" prefWidth="90"/>
+                <TableColumn fx:id="durationColumn" text="Duration" prefWidth="100"/>
                 <TableColumn fx:id="startColumn" text="Start" prefWidth="95"/>
                 <TableColumn fx:id="endColumn" text="End" prefWidth="95"/>
                 <TableColumn fx:id="resourcesColumn" text="Resources" prefWidth="80"/>
@@ -35,6 +37,7 @@
             <Button fx:id="deleteButton" text="Delete" onAction="#onDelete"/>
         </HBox>
     </VBox>
+    <ScrollPane fitToWidth="true">
     <VBox spacing="8">
         <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
         <GridPane hgap="8" vgap="8">
@@ -46,23 +49,33 @@
             <TextField fx:id="nameField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
             <Label text="Description" GridPane.rowIndex="1"/>
             <TextArea fx:id="descriptionArea" prefRowCount="2" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-            <Label text="Duration (days)" GridPane.rowIndex="2"/>
-            <TextField fx:id="durationField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+            <Label text="Duration" GridPane.rowIndex="2"/>
+            <HBox spacing="8" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                <TextField fx:id="durationField" prefColumnCount="6" promptText="amount"/>
+                <ComboBox fx:id="durationUnitCombo" prefWidth="120"/>
+            </HBox>
             <Label text="Resources" GridPane.rowIndex="3"/>
             <TextField fx:id="resourcesField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
             <Label text="Start date" GridPane.rowIndex="4"/>
             <DatePicker fx:id="startPicker" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
             <Label text="End date" GridPane.rowIndex="5"/>
             <DatePicker fx:id="endPicker" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
-            <Label text="Depends on" GridPane.rowIndex="6"/>
-            <ListView fx:id="dependenciesList" prefHeight="140" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
-            <Label text="Metadata" GridPane.rowIndex="7"/>
-            <TextArea fx:id="metadataArea" prefRowCount="4" promptText="key=value, one per line"
-                      GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+            <Label text="Depends on" GridPane.rowIndex="6" GridPane.valignment="TOP"/>
+            <VBox spacing="4" GridPane.rowIndex="6" GridPane.columnIndex="1">
+                <ListView fx:id="dependenciesList" prefHeight="140"/>
+                <Label fx:id="dependenciesHint" wrapText="true" style="-fx-text-fill: dimgray; -fx-font-size: 0.9em;"
+                       text="Tick the activities that must finish before this one starts."/>
+            </VBox>
+            <Label text="Metadata" GridPane.rowIndex="7" GridPane.valignment="TOP"/>
+            <VBox spacing="4" GridPane.rowIndex="7" GridPane.columnIndex="1">
+                <VBox fx:id="metadataRows" spacing="4"/>
+                <Button text="+ Add field" onAction="#onAddMetadata"/>
+            </VBox>
             <Label text="Impact" GridPane.rowIndex="8"/>
             <TextField fx:id="impactField" promptText="relative value, e.g. 1-100" GridPane.rowIndex="8"
                        GridPane.columnIndex="1"/>
         </GridPane>
         <Button text="Save" defaultButton="true" onAction="#onSave"/>
     </VBox>
+    </ScrollPane>
 </SplitPane>

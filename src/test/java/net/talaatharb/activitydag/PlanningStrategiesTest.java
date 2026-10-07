@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import net.talaatharb.activitydag.model.ActivityModel;
+import net.talaatharb.activitydag.model.DurationUnit;
 import net.talaatharb.activitydag.planning.CpmStrategy;
 import net.talaatharb.activitydag.planning.HighImpactStrategy;
 import net.talaatharb.activitydag.planning.LowestResourcesStrategy;
@@ -21,6 +22,7 @@ import net.talaatharb.activitydag.planning.PlannedActivity;
 
 class PlanningStrategiesTest {
     private static final LocalDate START = LocalDate.of(2026, 1, 1);
+    private static final int DAY = 24 * 60;
 
     private static ActivityModel activity(String name, long duration, int resources, ActivityModel... deps) {
         ActivityModel a = new ActivityModel();
@@ -46,12 +48,12 @@ class PlanningStrategiesTest {
         ActivityModel d = activity("D", 1, 1, b, c);
         PlanResult r = new CpmStrategy().plan(List.of(d, c, b, a), START);
 
-        assertEquals(9, r.totalDays());
+        assertEquals(9 * DAY, r.totalMinutes());
         assertTrue(find(r, "A").critical());
         assertTrue(find(r, "C").critical());
         assertTrue(find(r, "D").critical());
         assertFalse(find(r, "B").critical());
-        assertEquals(3, find(r, "B").slack());
+        assertEquals(3 * DAY, find(r, "B").slack());
         assertEquals(START.plusDays(3), find(r, "C").startDate());
         assertEquals(START.plusDays(9), find(r, "D").endDate());
     }
@@ -66,9 +68,9 @@ class PlanningStrategiesTest {
         PlanResult max = new MaximumResourcesStrategy().plan(all, START);
         PlanResult low = new LowestResourcesStrategy().plan(all, START);
 
-        assertEquals(2, max.totalDays());
+        assertEquals(2 * DAY, max.totalMinutes());
         assertEquals(9, max.peakResources());
-        assertEquals(6, low.totalDays());
+        assertEquals(6 * DAY, low.totalMinutes());
         assertEquals(3, low.peakResources());
     }
 
@@ -78,8 +80,8 @@ class PlanningStrategiesTest {
         ActivityModel b = activity("B", 0, 0, a);
         ActivityModel c = activity("C", 1, 1, b);
         PlanResult r = new LowestResourcesStrategy().plan(List.of(a, b, c), START);
-        assertEquals(3, r.totalDays());
-        assertEquals(2, find(r, "C").startOffset());
+        assertEquals(3 * DAY, r.totalMinutes());
+        assertEquals(2 * DAY, find(r, "C").startOffset());
     }
 
     @Test
@@ -99,8 +101,8 @@ class PlanningStrategiesTest {
         List<ActivityModel> all = List.of(low, high);
 
         PlanResult r = new HighImpactStrategy().plan(all, START);
-        assertEquals(0, find(r, "High").startOffset());
-        assertEquals(2, find(r, "Low").startOffset());
+        assertEquals(0 * DAY, find(r, "High").startOffset());
+        assertEquals(2 * DAY, find(r, "Low").startOffset());
         assertEquals(75.0, find(r, "High").impactPercent(), 0.001);
         assertEquals(25.0, find(r, "Low").impactPercent(), 0.001);
     }
@@ -113,8 +115,21 @@ class PlanningStrategiesTest {
         ActivityModel other = activity("A-other", 1, 2);
         other.setImpact(5);
         PlanResult r = new HighImpactStrategy().plan(List.of(other, big, prereq), START);
-        assertEquals(0, find(r, "Z-prereq").startOffset());
-        assertEquals(1, find(r, "Big").startOffset());
-        assertEquals(2, find(r, "A-other").startOffset());
+        assertEquals(0 * DAY, find(r, "Z-prereq").startOffset());
+        assertEquals(1 * DAY, find(r, "Big").startOffset());
+        assertEquals(2 * DAY, find(r, "A-other").startOffset());
+    }
+
+    @Test
+    void subDayDurationsAreScheduledInMinutes() {
+        ActivityModel a = activity("A", 1, 1);
+        a.setDurationUnit(DurationUnit.HOURS);
+        ActivityModel b = activity("B", 30, 1, a);
+        b.setDurationUnit(DurationUnit.MINUTES);
+        PlanResult r = new CpmStrategy().plan(List.of(a, b), START);
+        assertEquals(90, r.totalMinutes());
+        assertEquals(START.atTime(1, 0), find(r, "B").start());
+        assertEquals(START.atTime(1, 30), find(r, "B").end());
+        assertEquals(START, find(r, "B").endDate());
     }
 }

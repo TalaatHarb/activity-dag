@@ -1,7 +1,11 @@
 package net.talaatharb.activitydag.ui;
 
 import java.time.LocalDate;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -11,32 +15,45 @@ import java.util.stream.Collectors;
 
 import com.google.inject.Inject;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
-import javafx.scene.control.ListCell;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.control.cell.CheckBoxListCell;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 import net.talaatharb.activitydag.dto.ActivityDto;
+import net.talaatharb.activitydag.model.DurationUnit;
 
 /** Define, view, edit and delete activities, including their dependencies. */
 public class ActivityTabController {
+    private static final String DEPENDENCY_HINT = "Tick the activities that must finish before this one starts.";
+
     private final ProjectContext context;
+    private final Map<UUID, BooleanProperty> dependencyChecks = new HashMap<>();
     private UUID editingId;
 
     @FXML private TableView<ActivityDto> table;
     @FXML private TableColumn<ActivityDto, String> nameColumn;
-    @FXML private TableColumn<ActivityDto, Number> durationColumn;
+    @FXML private TableColumn<ActivityDto, String> durationColumn;
     @FXML private TableColumn<ActivityDto, LocalDate> startColumn;
     @FXML private TableColumn<ActivityDto, LocalDate> endColumn;
     @FXML private TableColumn<ActivityDto, Number> resourcesColumn;
@@ -45,12 +62,14 @@ public class ActivityTabController {
     @FXML private TextField nameField;
     @FXML private TextArea descriptionArea;
     @FXML private TextField durationField;
+    @FXML private ComboBox<DurationUnit> durationUnitCombo;
     @FXML private TextField resourcesField;
     @FXML private TextField impactField;
     @FXML private DatePicker startPicker;
     @FXML private DatePicker endPicker;
     @FXML private ListView<ActivityDto> dependenciesList;
-    @FXML private TextArea metadataArea;
+    @FXML private Label dependenciesHint;
+    @FXML private VBox metadataRows;
     @FXML private Button deleteButton;
 
     @Inject
@@ -61,21 +80,32 @@ public class ActivityTabController {
     @FXML
     private void initialize() {
         nameColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getName()));
-        durationColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getDuration()));
+        durationColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().durationText()));
         startColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getStartDate()));
         endColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getEndDate()));
         resourcesColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getResources()));
         impactColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getImpact()));
         dependsOnColumn.setCellValueFactory(c -> new SimpleStringProperty(dependencyNames(c.getValue())));
 
-        dependenciesList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        dependenciesList.setCellFactory(l -> new ListCell<>() {
-            @Override
-            protected void updateItem(ActivityDto item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.getName());
-            }
-        });
+        durationUnitCombo.setItems(FXCollections.observableArrayList(DurationUnit.values()));
+        durationField.setTextFormatter(digitsOnly());
+        resourcesField.setTextFormatter(digitsOnly());
+        impactField.setTextFormatter(digitsOnly());
+
+        dependenciesList.setPlaceholder(new Label("No other activities to depend on"));
+        dependenciesList.setCellFactory(CheckBoxListCell.forListView(
+                item -> dependencyChecks.computeIfAbsent(item.getId(), id -> new SimpleBooleanProperty()),
+                new StringConverter<>() {
+                    @Override
+                    public String toString(ActivityDto item) {
+                        return item == null ? "" : item.getName();
+                    }
+
+                    @Override
+                    public ActivityDto fromString(String string) {
+                        return null;
+                    }
+                }));
 
         table.setItems(context.getActivities());
         table.getSelectionModel().selectedItemProperty().addListener((obs, old, now) -> {
@@ -85,6 +115,10 @@ public class ActivityTabController {
         });
         context.getActivities().addListener((ListChangeListener<ActivityDto>) c -> refresh());
         refresh();
+    }
+
+    private static TextFormatter<String> digitsOnly() {
+        return new TextFormatter<>(change -> change.getControlNewText().matches("\\d*") ? change : null);
     }
 
     private void refresh() {
@@ -109,12 +143,12 @@ public class ActivityTabController {
         nameField.setText(dto.getName());
         descriptionArea.setText(dto.getDescription());
         durationField.setText(Long.toString(dto.getDuration()));
+        durationUnitCombo.setValue(dto.getDurationUnit() == null ? DurationUnit.DAYS : dto.getDurationUnit());
         resourcesField.setText(Integer.toString(dto.getResources()));
         impactField.setText(Integer.toString(dto.getImpact()));
         startPicker.setValue(dto.getStartDate());
         endPicker.setValue(dto.getEndDate());
-        metadataArea.setText(dto.getMetadata().entrySet().stream().map(e -> e.getKey() + "=" + e.getValue())
-                .collect(Collectors.joining("\n")));
+        loadMetadata(dto.getMetadata());
         loadDependencyChoices(dto.getId(), dto.getDependencies());
         deleteButton.setDisable(false);
     }
@@ -125,25 +159,90 @@ public class ActivityTabController {
         nameField.clear();
         descriptionArea.clear();
         durationField.setText("1");
+        durationUnitCombo.setValue(DurationUnit.DAYS);
         resourcesField.setText("1");
         impactField.setText("1");
         startPicker.setValue(null);
         endPicker.setValue(null);
-        metadataArea.clear();
+        loadMetadata(Map.of());
         loadDependencyChoices(null, Set.of());
         deleteButton.setDisable(true);
     }
 
-    private void loadDependencyChoices(UUID excludeId, Set<UUID> selected) {
-        List<ActivityDto> choices = context.getActivities().stream().filter(a -> !a.getId().equals(excludeId))
-                .toList();
+    /**
+     * Offers every activity of the project except this one and those that (transitively) depend on it, since
+     * choosing them would create a cycle.
+     */
+    private void loadDependencyChoices(UUID currentId, Set<UUID> selected) {
+        Set<UUID> excluded = currentId == null ? Set.of() : transitiveDependents(currentId);
+        List<ActivityDto> choices = context.getActivities().stream()
+                .filter(a -> !a.getId().equals(currentId) && !excluded.contains(a.getId())).toList();
+        dependencyChecks.clear();
+        choices.forEach(a -> dependencyChecks.put(a.getId(), new SimpleBooleanProperty(selected.contains(a.getId()))));
         dependenciesList.getItems().setAll(choices);
-        dependenciesList.getSelectionModel().clearSelection();
-        for (int i = 0; i < choices.size(); i++) {
-            if (selected.contains(choices.get(i).getId())) {
-                dependenciesList.getSelectionModel().select(i);
+        dependenciesList.refresh();
+        dependenciesHint.setText(excluded.isEmpty() ? DEPENDENCY_HINT
+                : DEPENDENCY_HINT + " " + excluded.size()
+                        + " activity(ies) depending on this one are hidden to avoid cycles.");
+    }
+
+    private Set<UUID> transitiveDependents(UUID id) {
+        Set<UUID> result = new HashSet<>();
+        Deque<UUID> queue = new ArrayDeque<>(List.of(id));
+        while (!queue.isEmpty()) {
+            UUID current = queue.poll();
+            for (ActivityDto a : context.getActivities()) {
+                if (a.getDependencies().contains(current) && result.add(a.getId())) {
+                    queue.add(a.getId());
+                }
             }
         }
+        return result;
+    }
+
+    private void loadMetadata(Map<String, String> metadata) {
+        metadataRows.getChildren().clear();
+        metadata.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .forEach(e -> addMetadataRow(e.getKey(), e.getValue()));
+    }
+
+    private void addMetadataRow(String key, String value) {
+        TextField keyField = new TextField(key);
+        keyField.setPromptText("key");
+        keyField.setPrefColumnCount(8);
+        TextField valueField = new TextField(value);
+        valueField.setPromptText("value");
+        HBox.setHgrow(valueField, Priority.ALWAYS);
+        Button remove = new Button("✕");
+        HBox row = new HBox(4, keyField, valueField, remove);
+        remove.setOnAction(e -> metadataRows.getChildren().remove(row));
+        metadataRows.getChildren().add(row);
+    }
+
+    @FXML
+    private void onAddMetadata() {
+        addMetadataRow("", "");
+        HBox last = (HBox) metadataRows.getChildren().get(metadataRows.getChildren().size() - 1);
+        last.getChildren().get(0).requestFocus();
+    }
+
+    private Map<String, String> collectMetadata() {
+        Map<String, String> result = new LinkedHashMap<>();
+        for (var node : metadataRows.getChildren()) {
+            HBox row = (HBox) node;
+            String key = ((TextField) row.getChildren().get(0)).getText().trim();
+            String value = ((TextField) row.getChildren().get(1)).getText().trim();
+            if (key.isEmpty() && value.isEmpty()) {
+                continue;
+            }
+            if (key.isEmpty()) {
+                throw new IllegalArgumentException("Metadata value '" + value + "' needs a key.");
+            }
+            if (result.put(key, value) != null) {
+                throw new IllegalArgumentException("Duplicate metadata key: " + key);
+            }
+        }
+        return result;
     }
 
     @FXML
@@ -170,12 +269,14 @@ public class ActivityTabController {
             dto.setName(nameField.getText() == null ? "" : nameField.getText().trim());
             dto.setDescription(descriptionArea.getText());
             dto.setDuration(Long.parseLong(durationField.getText().trim()));
+            dto.setDurationUnit(durationUnitCombo.getValue() == null ? DurationUnit.DAYS : durationUnitCombo.getValue());
             dto.setResources(Integer.parseInt(resourcesField.getText().trim()));
             dto.setImpact(Integer.parseInt(impactField.getText().trim()));
             dto.setStartDate(startPicker.getValue());
             dto.setEndDate(endPicker.getValue());
-            dto.setMetadata(parseMetadata(metadataArea.getText()));
-            dto.setDependencies(dependenciesList.getSelectionModel().getSelectedItems().stream()
+            dto.setMetadata(collectMetadata());
+            dto.setDependencies(dependenciesList.getItems().stream()
+                    .filter(a -> dependencyChecks.containsKey(a.getId()) && dependencyChecks.get(a.getId()).get())
                     .map(ActivityDto::getId).collect(Collectors.toCollection(LinkedHashSet::new)));
             ActivityDto saved = context.saveActivity(dto);
             editingId = saved.getId();
@@ -206,24 +307,6 @@ public class ActivityTabController {
             editingId = null;
             context.deleteActivity(selected.getId());
         });
-    }
-
-    static Map<String, String> parseMetadata(String text) {
-        Map<String, String> result = new HashMap<>();
-        if (text == null) {
-            return result;
-        }
-        for (String line : text.split("\\R")) {
-            if (line.isBlank()) {
-                continue;
-            }
-            int idx = line.indexOf('=');
-            if (idx <= 0) {
-                throw new IllegalArgumentException("Metadata lines must look like key=value: " + line);
-            }
-            result.put(line.substring(0, idx).trim(), line.substring(idx + 1).trim());
-        }
-        return result;
     }
 
     private void error(String message) {

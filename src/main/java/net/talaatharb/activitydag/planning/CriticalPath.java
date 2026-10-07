@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import net.talaatharb.activitydag.model.ActivityModel;
 
-/** Classic forward/backward pass computing early/late times in day offsets. */
+/** Classic forward/backward pass computing early/late times in minute offsets. */
 public final class CriticalPath {
     public record Times(int earlyStart, int earlyFinish, int lateStart, int lateFinish) {
         public int slack() {
@@ -29,7 +29,7 @@ public final class CriticalPath {
                 start = Math.max(start, ef.getOrDefault(dep, 0));
             }
             es.put(a.getId(), start);
-            int finish = start + (int) Math.max(0, a.getDuration());
+            int finish = start + Math.toIntExact(a.durationInMinutes());
             ef.put(a.getId(), finish);
             total = Math.max(total, finish);
         }
@@ -40,7 +40,7 @@ public final class CriticalPath {
         for (int i = order.size() - 1; i >= 0; i--) {
             ActivityModel a = order.get(i);
             int latestFinish = lf.get(a.getId());
-            int latestStart = latestFinish - (int) Math.max(0, a.getDuration());
+            int latestStart = latestFinish - Math.toIntExact(a.durationInMinutes());
             times.put(a.getId(), new Times(es.get(a.getId()), ef.get(a.getId()), latestStart, latestFinish));
             for (UUID dep : a.getDependencies()) {
                 if (lf.containsKey(dep)) {

@@ -67,7 +67,7 @@ public class GraphTabController {
             box.setStroke(Color.web("#3367d6"));
             Text title = new Text(x + 8, y + 22, a.getName());
             title.setWrappingWidth(NODE_W - 16);
-            Text detail = new Text(x + 8, y + 42, a.getDuration() + " d, " + a.getResources() + " res");
+            Text detail = new Text(x + 8, y + 42, a.durationText() + ", " + a.getResources() + " res");
             detail.setFill(Color.DIMGRAY);
             graphPane.getChildren().addAll(box, title, detail);
             maxX = Math.max(maxX, x + NODE_W + MARGIN);

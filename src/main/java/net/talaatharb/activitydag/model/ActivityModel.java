@@ -7,15 +7,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** A unit of work belonging to a project; dependencies form a DAG. Duration is expressed in days. */
+/** A unit of work belonging to a project; dependencies form a DAG. Duration is an amount of {@link #durationUnit}. */
 public class ActivityModel extends BaseModel {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private UUID projectId;
     private String name;
     private String description;
     private Set<UUID> dependencies = new HashSet<>();
     private long duration;
+    private DurationUnit durationUnit = DurationUnit.DAYS;
     private LocalDate startDate;
     private LocalDate endDate;
     private int resources;
@@ -32,6 +33,14 @@ public class ActivityModel extends BaseModel {
     public void setDependencies(Set<UUID> dependencies) { this.dependencies = dependencies; }
     public long getDuration() { return duration; }
     public void setDuration(long duration) { this.duration = duration; }
+    public DurationUnit getDurationUnit() { return durationUnit; }
+    public void setDurationUnit(DurationUnit durationUnit) { this.durationUnit = durationUnit; }
+
+    /** Duration converted to minutes, never negative. */
+    public long durationInMinutes() {
+        DurationUnit unit = durationUnit == null ? DurationUnit.DAYS : durationUnit;
+        return unit.toMinutes(Math.max(0, duration));
+    }
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getEndDate() { return endDate; }
