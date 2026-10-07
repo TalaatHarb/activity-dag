@@ -1,5 +1,7 @@
 package net.talaatharb.activitydag.ui;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,7 @@ import net.talaatharb.activitydag.planning.PlanResult;
 import net.talaatharb.activitydag.planning.PlannedActivity;
 import net.talaatharb.activitydag.planning.PlanningService;
 import net.talaatharb.activitydag.service.ActivityService;
+import net.talaatharb.activitydag.service.ActivityTransferService;
 import net.talaatharb.activitydag.service.ProjectService;
 
 /**
@@ -33,6 +36,7 @@ public class ProjectContext {
     private final ProjectService projectService;
     private final ActivityService activityService;
     private final PlanningService planningService;
+    private final ActivityTransferService transferService;
     private final ProjectMapper projectMapper;
     private final ActivityMapper activityMapper;
 
@@ -42,10 +46,12 @@ public class ProjectContext {
 
     @Inject
     public ProjectContext(ProjectService projectService, ActivityService activityService,
-            PlanningService planningService, ProjectMapper projectMapper, ActivityMapper activityMapper) {
+            PlanningService planningService, ActivityTransferService transferService, ProjectMapper projectMapper,
+            ActivityMapper activityMapper) {
         this.projectService = projectService;
         this.activityService = activityService;
         this.planningService = planningService;
+        this.transferService = transferService;
         this.projectMapper = projectMapper;
         this.activityMapper = activityMapper;
         currentProject.addListener((obs, old, now) -> reloadActivities());
@@ -94,6 +100,29 @@ public class ProjectContext {
     public void updateProject(ProjectDto dto) {
         projectService.save(projectMapper.toModel(dto));
         refreshProjects(dto.getId());
+    }
+
+    /** Copies the current project and its activities (with fresh ids) under a new name and switches to it. */
+    public ProjectDto duplicateCurrentProject(String newName) {
+        ProjectDto source = currentProject.get();
+        if (source == null) {
+            throw new IllegalArgumentException("No project selected");
+        }
+        ProjectDto copy = projectMapper.toDto(transferService.duplicateProject(source.getId(), newName));
+        refreshProjects(copy.getId());
+        return copy;
+    }
+
+    public void exportActivities(Path file) throws IOException {
+        transferService.exportToFile(currentProject.get().getId(), file);
+    }
+
+    public int importActivities(Path file) throws IOException {
+        try {
+            return transferService.importFromFile(currentProject.get().getId(), file);
+        } finally {
+            reloadActivities();
+        }
     }
 
     public void deleteCurrentProject() {

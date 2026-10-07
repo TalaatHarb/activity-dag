@@ -1,5 +1,7 @@
 package net.talaatharb.activitydag.ui;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -39,6 +41,7 @@ import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import net.talaatharb.activitydag.dto.ActivityDto;
 import net.talaatharb.activitydag.model.DurationUnit;
@@ -307,6 +310,61 @@ public class ActivityTabController {
             editingId = null;
             context.deleteActivity(selected.getId());
         });
+    }
+
+    @FXML
+    private void onExport() {
+        if (context.getCurrentProject() == null) {
+            return;
+        }
+        FileChooser chooser = jsonChooser("Export activities");
+        chooser.setInitialFileName(context.getCurrentProject().getName().replaceAll("[\\\\/:*?\"<>|]", "_")
+                + "-activities.json");
+        File file = chooser.showSaveDialog(table.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        try {
+            context.exportActivities(file.toPath());
+            info("Exported " + context.getActivities().size() + " activities to " + file);
+        } catch (IOException e) {
+            error("Cannot write " + file + ": " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            error(e.getMessage());
+        }
+    }
+
+    @FXML
+    private void onImport() {
+        if (context.getCurrentProject() == null) {
+            return;
+        }
+        File file = jsonChooser("Import activities").showOpenDialog(table.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        try {
+            int count = context.importActivities(file.toPath());
+            info("Imported " + count + " activities into '" + context.getCurrentProject().getName() + "'.");
+        } catch (IOException e) {
+            error("Cannot read " + file + ": " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            error(e.getMessage());
+        }
+    }
+
+    private static FileChooser jsonChooser(String title) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("JSON files", "*.json"),
+                new FileChooser.ExtensionFilter("All files", "*.*"));
+        return chooser;
+    }
+
+    private void info(String message) {
+        Alert alert = new Alert(AlertType.INFORMATION, message);
+        alert.setHeaderText(null);
+        alert.showAndWait();
     }
 
     private void error(String message) {

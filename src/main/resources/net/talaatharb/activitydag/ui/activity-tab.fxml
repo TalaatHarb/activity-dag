@@ -35,6 +35,8 @@
         <HBox spacing="8">
             <Button text="New" onAction="#onNew"/>
             <Button fx:id="deleteButton" text="Delete" onAction="#onDelete"/>
+            <Button text="Import..." onAction="#onImport"/>
+            <Button text="Export..." onAction="#onExport"/>
         </HBox>
     </VBox>
     <ScrollPane fitToWidth="true">

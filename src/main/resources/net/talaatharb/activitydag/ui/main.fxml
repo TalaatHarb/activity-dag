@@ -18,6 +18,7 @@
             <ComboBox fx:id="projectCombo" prefWidth="260"/>
             <Button text="New" onAction="#onNewProject"/>
             <Button text="Rename" onAction="#onRenameProject"/>
+            <Button text="Duplicate" onAction="#onDuplicateProject"/>
             <Button text="Delete" onAction="#onDeleteProject"/>
         </HBox>
     </top>

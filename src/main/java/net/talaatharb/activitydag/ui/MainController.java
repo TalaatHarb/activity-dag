@@ -56,6 +56,16 @@ public class MainController {
     }
 
     @FXML
+    private void onDuplicateProject() {
+        ProjectDto current = context.getCurrentProject();
+        if (current == null) {
+            return;
+        }
+        promptName("Duplicate project", current.getName() + " (copy)")
+                .ifPresent(name -> run(() -> context.duplicateCurrentProject(name)));
+    }
+
+    @FXML
     private void onDeleteProject() {
         ProjectDto current = context.getCurrentProject();
         if (current == null) {
