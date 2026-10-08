@@ -15,3 +15,6 @@ A JavaFX desktop application for activity planning that treats activities as a d
 JavaFX + FXML (MVC), Guice (dependency injection), MapDB (persistence file, default `~/.activity-dag/activity-dag.db`, override with `-Dactivitydag.db=<path>`), MapStruct (model ↔ DTO), Jackson (JSON import/export).
 
 Build and test: `mvn verify`; run: `mvn javafx:run`.
+
+## Releases
+Pushing a `v*` tag builds OS-specific JARs for Linux, Windows and macOS and attaches them to the GitHub release. Windows releases also include `activity-dag-<version>-Windows-portable.zip`, containing an executable and a bundled Java runtime. Extract the entire ZIP and run `ActivityDag\ActivityDag.exe`; no Java installation is required. Keep the accompanying `app` and `runtime` folders next to the executable.
