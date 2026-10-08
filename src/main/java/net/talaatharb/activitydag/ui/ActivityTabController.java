@@ -68,6 +68,11 @@ public class ActivityTabController {
     @FXML private ComboBox<DurationUnit> durationUnitCombo;
     @FXML private TextField resourcesField;
     @FXML private TextField impactField;
+    @FXML private TextField statusField;
+    @FXML private TextField categoryField;
+    @FXML private FilterBar filterBar;
+    @FXML private TableColumn<ActivityDto, String> statusColumn;
+    @FXML private TableColumn<ActivityDto, String> categoryColumn;
     @FXML private DatePicker startPicker;
     @FXML private DatePicker endPicker;
     @FXML private ListView<ActivityDto> dependenciesList;
@@ -82,6 +87,9 @@ public class ActivityTabController {
 
     @FXML
     private void initialize() {
+        filterBar.init(context);
+        statusColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getStatus()));
+        categoryColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCategory()));
         nameColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getName()));
         durationColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().durationText()));
         startColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getStartDate()));
@@ -149,6 +157,8 @@ public class ActivityTabController {
         durationUnitCombo.setValue(dto.getDurationUnit() == null ? DurationUnit.DAYS : dto.getDurationUnit());
         resourcesField.setText(Integer.toString(dto.getResources()));
         impactField.setText(Integer.toString(dto.getImpact()));
+        statusField.setText(dto.getStatus());
+        categoryField.setText(dto.getCategory());
         startPicker.setValue(dto.getStartDate());
         endPicker.setValue(dto.getEndDate());
         loadMetadata(dto.getMetadata());
@@ -165,6 +175,8 @@ public class ActivityTabController {
         durationUnitCombo.setValue(DurationUnit.DAYS);
         resourcesField.setText("1");
         impactField.setText("1");
+        statusField.clear();
+        categoryField.clear();
         startPicker.setValue(null);
         endPicker.setValue(null);
         loadMetadata(Map.of());
@@ -275,12 +287,23 @@ public class ActivityTabController {
             dto.setDurationUnit(durationUnitCombo.getValue() == null ? DurationUnit.DAYS : durationUnitCombo.getValue());
             dto.setResources(Integer.parseInt(resourcesField.getText().trim()));
             dto.setImpact(Integer.parseInt(impactField.getText().trim()));
+            dto.setStatus(blankToNull(statusField.getText()));
+            dto.setCategory(blankToNull(categoryField.getText()));
             dto.setStartDate(startPicker.getValue());
             dto.setEndDate(endPicker.getValue());
             dto.setMetadata(collectMetadata());
             dto.setDependencies(dependenciesList.getItems().stream()
                     .filter(a -> dependencyChecks.containsKey(a.getId()) && dependencyChecks.get(a.getId()).get())
                     .map(ActivityDto::getId).collect(Collectors.toCollection(LinkedHashSet::new)));
+            if (editingId != null) {
+                Set<UUID> shown = dependenciesList.getItems().stream().map(ActivityDto::getId)
+                        .collect(Collectors.toSet());
+                context.getAllActivities().stream().filter(a -> a.getId().equals(editingId)).findFirst()
+                        .ifPresent(old -> old.getDependencies().stream()
+                                .filter(d -> !shown.contains(d) && context.getAllActivities().stream()
+                                        .anyMatch(a -> a.getId().equals(d) && !context.getActivities().contains(a)))
+                                .forEach(d -> dto.getDependencies().add(d)));
+            }
             ActivityDto saved = context.saveActivity(dto);
             editingId = saved.getId();
             refresh();
@@ -289,6 +312,10 @@ public class ActivityTabController {
         } catch (IllegalArgumentException e) {
             error(e.getMessage());
         }
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
     }
 
     @FXML

@@ -12,10 +12,12 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import net.talaatharb.activitydag.ui.FilterBar?>
 
 <VBox spacing="8" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
       fx:controller="net.talaatharb.activitydag.ui.PlanningTabController">
     <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+    <FilterBar fx:id="filterBar"/>
     <HBox spacing="8">
         <Label text="Strategy:"/>
         <ComboBox fx:id="strategyCombo" prefWidth="260"/>

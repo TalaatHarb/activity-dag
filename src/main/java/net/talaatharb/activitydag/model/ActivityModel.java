@@ -21,6 +21,8 @@ public class ActivityModel extends BaseModel {
     private LocalDate endDate;
     private int resources;
     private int impact;
+    private String status;
+    private String category;
     private Map<String, String> metadata = new HashMap<>();
 
     public UUID getProjectId() { return projectId; }
@@ -49,6 +51,10 @@ public class ActivityModel extends BaseModel {
     public void setResources(int resources) { this.resources = resources; }
     public int getImpact() { return impact; }
     public void setImpact(int impact) { this.impact = impact; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
     public Map<String, String> getMetadata() { return metadata; }
     public void setMetadata(Map<String, String> metadata) { this.metadata = metadata; }
 }

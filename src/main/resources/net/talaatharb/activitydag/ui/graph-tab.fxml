@@ -2,8 +2,13 @@
 
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import net.talaatharb.activitydag.ui.FilterBar?>
 
-<ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-            fx:controller="net.talaatharb.activitydag.ui.GraphTabController">
-    <Pane fx:id="graphPane"/>
-</ScrollPane>
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.talaatharb.activitydag.ui.GraphTabController">
+    <FilterBar fx:id="filterBar"/>
+    <ScrollPane VBox.vgrow="ALWAYS">
+        <Pane fx:id="graphPane"/>
+    </ScrollPane>
+</VBox>
