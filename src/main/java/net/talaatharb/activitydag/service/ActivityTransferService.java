@@ -3,11 +3,12 @@ package net.talaatharb.activitydag.service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,8 +38,8 @@ public class ActivityTransferService {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ActivityJson(String name, String description, long duration, DurationUnit durationUnit,
-            LocalDate startDate, LocalDate endDate, int resources, int impact, Map<String, String> metadata,
-            List<String> dependsOn, String status, String category) {
+            Instant startDate, Instant endDate, int resources, int impact, Map<String, String> metadata,
+            List<String> dependsOn, String status, String category, Set<String> tags) {
     }
 
     private final ProjectService projectService;
@@ -89,6 +90,7 @@ public class ActivityTransferService {
             c.setStatus(a.getStatus());
             c.setCategory(a.getCategory());
             c.setMetadata(new HashMap<>(a.getMetadata()));
+            c.setTags(new LinkedHashSet<>(a.getTags()));
             Set<UUID> deps = new HashSet<>();
             a.getDependencies().stream().map(newIds::get).filter(id -> id != null).forEach(deps::add);
             c.setDependencies(deps);
@@ -111,7 +113,8 @@ public class ActivityTransferService {
         List<ActivityJson> out = activities.stream().map(a -> new ActivityJson(a.getName(), a.getDescription(),
                 a.getDuration(), a.getDurationUnit(), a.getStartDate(), a.getEndDate(), a.getResources(),
                 a.getImpact(), new LinkedHashMap<>(a.getMetadata()),
-                a.getDependencies().stream().map(names::get).filter(n -> n != null).sorted().toList(), a.getStatus(), a.getCategory())).toList();
+                a.getDependencies().stream().map(names::get).filter(n -> n != null).sorted().toList(), a.getStatus(), a.getCategory(),
+                new java.util.TreeSet<>(a.getTags()))).toList();
         try {
             return json.writeValueAsString(out);
         } catch (JsonProcessingException e) {
@@ -155,6 +158,7 @@ public class ActivityTransferService {
             a.setStatus(j.status());
             a.setCategory(j.category());
             a.setMetadata(j.metadata() == null ? new HashMap<>() : new HashMap<>(j.metadata()));
+            a.setTags(j.tags() == null ? new LinkedHashSet<>() : new LinkedHashSet<>(j.tags()));
             Set<UUID> deps = new HashSet<>();
             for (String dep : j.dependsOn() == null ? List.<String>of() : j.dependsOn()) {
                 UUID id = ids.get(dep);

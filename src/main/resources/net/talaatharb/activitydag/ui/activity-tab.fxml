@@ -13,6 +13,7 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -63,10 +64,16 @@
             </HBox>
             <Label text="Resources" GridPane.rowIndex="3"/>
             <TextField fx:id="resourcesField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-            <Label text="Start date" GridPane.rowIndex="4"/>
-            <DatePicker fx:id="startPicker" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-            <Label text="End date" GridPane.rowIndex="5"/>
-            <DatePicker fx:id="endPicker" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+            <Label text="Start" GridPane.rowIndex="4"/>
+            <HBox spacing="8" GridPane.rowIndex="4" GridPane.columnIndex="1">
+                <DatePicker fx:id="startPicker"/>
+                <TextField fx:id="startTimeField" prefColumnCount="5" promptText="HH:mm"/>
+            </HBox>
+            <Label text="End" GridPane.rowIndex="5"/>
+            <HBox spacing="8" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                <DatePicker fx:id="endPicker"/>
+                <TextField fx:id="endTimeField" prefColumnCount="5" promptText="HH:mm"/>
+            </HBox>
             <Label text="Depends on" GridPane.rowIndex="6" GridPane.valignment="TOP"/>
             <VBox spacing="4" GridPane.rowIndex="6" GridPane.columnIndex="1">
                 <ListView fx:id="dependenciesList" prefHeight="140"/>
@@ -77,6 +84,14 @@
             <VBox spacing="4" GridPane.rowIndex="7" GridPane.columnIndex="1">
                 <VBox fx:id="metadataRows" spacing="4"/>
                 <Button text="+ Add field" onAction="#onAddMetadata"/>
+            </VBox>
+            <Label text="Tags" GridPane.rowIndex="11" GridPane.valignment="TOP"/>
+            <VBox spacing="4" GridPane.rowIndex="11" GridPane.columnIndex="1">
+                <FlowPane fx:id="tagsPane" hgap="4" vgap="4"/>
+                <HBox spacing="4">
+                    <TextField fx:id="tagField" promptText="new tag" onAction="#onAddTag"/>
+                    <Button text="+ Add tag" onAction="#onAddTag"/>
+                </HBox>
             </VBox>
             <Label text="Impact" GridPane.rowIndex="8"/>
             <TextField fx:id="impactField" promptText="relative value, e.g. 1-100" GridPane.rowIndex="8"
