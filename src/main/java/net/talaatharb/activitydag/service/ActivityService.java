@@ -1,7 +1,7 @@
 package net.talaatharb.activitydag.service;
 
 import java.time.Instant;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -138,7 +138,7 @@ public class ActivityService {
     }
 
     /** Stores planned start and end dates on the given activities. */
-    public void applySchedule(Map<UUID, LocalDate[]> schedule) {
+    public void applySchedule(Map<UUID, Instant[]> schedule) {
         schedule.forEach((id, dates) -> repository.findById(id).ifPresent(a -> {
             a.setStartDate(dates[0]);
             a.setEndDate(dates[1]);

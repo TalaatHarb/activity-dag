@@ -16,6 +16,7 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import net.talaatharb.activitydag.dto.ActivityDto;
@@ -110,9 +111,23 @@ public class KanbanTabController {
         Label title = new Label(a.getName());
         title.setWrapText(true);
         title.setStyle("-fx-font-weight: bold;");
-        Label detail = new Label(a.durationText() + ", " + a.getResources() + " res");
-        detail.setStyle("-fx-text-fill: dimgray;");
-        VBox card = new VBox(2, title, detail);
+        VBox card = new VBox(4, title);
+        if (!a.getTags().isEmpty()) {
+            FlowPane tags = new FlowPane(4, 4);
+            a.getTags().stream().sorted(String.CASE_INSENSITIVE_ORDER).forEach(t -> {
+                Label badge = new Label(t);
+                badge.setStyle("-fx-background-color: #e8f0fe; -fx-text-fill: #1a4db3; "
+                        + "-fx-background-radius: 10; -fx-padding: 1 8 1 8; -fx-font-size: 0.85em;");
+                tags.getChildren().add(badge);
+            });
+            card.getChildren().add(tags);
+        }
+        String other = ProjectContext.key(byStatus() ? a.getCategory() : a.getStatus());
+        if (!other.isEmpty()) {
+            Label field = new Label((byStatus() ? "Category: " : "Status: ") + other);
+            field.setStyle("-fx-text-fill: dimgray; -fx-font-size: 0.9em;");
+            card.getChildren().add(field);
+        }
         card.setPadding(new Insets(6));
         card.setStyle(CARD_STYLE);
         card.setOnDragDetected(e -> {

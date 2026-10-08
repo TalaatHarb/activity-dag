@@ -2,7 +2,9 @@ package net.talaatharb.activitydag.ui;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -186,8 +188,9 @@ public class ProjectContext {
     }
 
     public void applyPlan(PlanResult result) {
-        Map<UUID, LocalDate[]> schedule = result.activities().stream().collect(Collectors.toMap(
-                PlannedActivity::id, p -> new LocalDate[] { p.startDate(), p.endDate() }));
+        Map<UUID, Instant[]> schedule = result.activities().stream().collect(Collectors.toMap(
+                PlannedActivity::id, p -> new Instant[] { p.start().atZone(ZoneId.systemDefault()).toInstant(),
+                        p.end().atZone(ZoneId.systemDefault()).toInstant() }));
         activityService.applySchedule(schedule);
         reloadActivities();
     }

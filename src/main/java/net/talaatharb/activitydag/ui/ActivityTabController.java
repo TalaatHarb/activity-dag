@@ -2,7 +2,13 @@ package net.talaatharb.activitydag.ui;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -39,6 +45,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -57,8 +64,8 @@ public class ActivityTabController {
     @FXML private TableView<ActivityDto> table;
     @FXML private TableColumn<ActivityDto, String> nameColumn;
     @FXML private TableColumn<ActivityDto, String> durationColumn;
-    @FXML private TableColumn<ActivityDto, LocalDate> startColumn;
-    @FXML private TableColumn<ActivityDto, LocalDate> endColumn;
+    @FXML private TableColumn<ActivityDto, String> startColumn;
+    @FXML private TableColumn<ActivityDto, String> endColumn;
     @FXML private TableColumn<ActivityDto, Number> resourcesColumn;
     @FXML private TableColumn<ActivityDto, Number> impactColumn;
     @FXML private TableColumn<ActivityDto, String> dependsOnColumn;
@@ -78,6 +85,13 @@ public class ActivityTabController {
     @FXML private ListView<ActivityDto> dependenciesList;
     @FXML private Label dependenciesHint;
     @FXML private VBox metadataRows;
+    @FXML private TextField startTimeField;
+    @FXML private TextField endTimeField;
+    @FXML private FlowPane tagsPane;
+    @FXML private TextField tagField;
+    private final Set<String> editTags = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
     @FXML private Button deleteButton;
 
     @Inject
@@ -92,8 +106,8 @@ public class ActivityTabController {
         categoryColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCategory()));
         nameColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getName()));
         durationColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().durationText()));
-        startColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getStartDate()));
-        endColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getEndDate()));
+        startColumn.setCellValueFactory(c -> new SimpleStringProperty(formatInstant(c.getValue().getStartDate())));
+        endColumn.setCellValueFactory(c -> new SimpleStringProperty(formatInstant(c.getValue().getEndDate())));
         resourcesColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getResources()));
         impactColumn.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getImpact()));
         dependsOnColumn.setCellValueFactory(c -> new SimpleStringProperty(dependencyNames(c.getValue())));
@@ -159,8 +173,9 @@ public class ActivityTabController {
         impactField.setText(Integer.toString(dto.getImpact()));
         statusField.setText(dto.getStatus());
         categoryField.setText(dto.getCategory());
-        startPicker.setValue(dto.getStartDate());
-        endPicker.setValue(dto.getEndDate());
+        setInstant(startPicker, startTimeField, dto.getStartDate());
+        setInstant(endPicker, endTimeField, dto.getEndDate());
+        loadTags(dto.getTags());
         loadMetadata(dto.getMetadata());
         loadDependencyChoices(dto.getId(), dto.getDependencies());
         deleteButton.setDisable(false);
@@ -177,8 +192,9 @@ public class ActivityTabController {
         impactField.setText("1");
         statusField.clear();
         categoryField.clear();
-        startPicker.setValue(null);
-        endPicker.setValue(null);
+        setInstant(startPicker, startTimeField, null);
+        setInstant(endPicker, endTimeField, null);
+        loadTags(Set.of());
         loadMetadata(Map.of());
         loadDependencyChoices(null, Set.of());
         deleteButton.setDisable(true);
@@ -232,6 +248,70 @@ public class ActivityTabController {
         HBox row = new HBox(4, keyField, valueField, remove);
         remove.setOnAction(e -> metadataRows.getChildren().remove(row));
         metadataRows.getChildren().add(row);
+    }
+
+    private static String formatInstant(Instant instant) {
+        return instant == null ? "" : DATE_TIME.format(LocalDateTime.ofInstant(instant, ZoneId.systemDefault()));
+    }
+
+    private static void setInstant(DatePicker picker, TextField timeField, Instant instant) {
+        if (instant == null) {
+            picker.setValue(null);
+            timeField.setText("00:00");
+            return;
+        }
+        LocalDateTime local = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        picker.setValue(local.toLocalDate());
+        timeField.setText(TIME.format(local));
+    }
+
+    private static Instant readInstant(DatePicker picker, TextField timeField, String label) {
+        LocalDate date = picker.getValue();
+        if (date == null) {
+            return null;
+        }
+        String text = timeField.getText() == null ? "" : timeField.getText().trim();
+        try {
+            LocalTime time = text.isEmpty() ? LocalTime.MIDNIGHT : LocalTime.parse(text);
+            return date.atTime(time).atZone(ZoneId.systemDefault()).toInstant();
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException(label + " time must be HH:mm, e.g. 14:30");
+        }
+    }
+
+    private void loadTags(Set<String> tags) {
+        editTags.clear();
+        editTags.addAll(tags);
+        tagField.clear();
+        redrawTags();
+    }
+
+    private void redrawTags() {
+        tagsPane.getChildren().clear();
+        for (String tag : editTags) {
+            Label text = new Label(tag);
+            Button remove = new Button("✕");
+            remove.setStyle("-fx-background-color: transparent; -fx-padding: 0 0 0 2; -fx-text-fill: #3367d6;");
+            HBox badge = new HBox(2, text, remove);
+            badge.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            badge.setStyle("-fx-background-color: #e8f0fe; -fx-background-radius: 10; -fx-padding: 2 6 2 8;");
+            remove.setOnAction(e -> {
+                editTags.remove(tag);
+                redrawTags();
+            });
+            tagsPane.getChildren().add(badge);
+        }
+    }
+
+    @FXML
+    private void onAddTag() {
+        String tag = tagField.getText() == null ? "" : tagField.getText().trim();
+        if (!tag.isEmpty()) {
+            editTags.add(tag);
+            tagField.clear();
+            redrawTags();
+        }
+        tagField.requestFocus();
     }
 
     @FXML
@@ -289,8 +369,9 @@ public class ActivityTabController {
             dto.setImpact(Integer.parseInt(impactField.getText().trim()));
             dto.setStatus(blankToNull(statusField.getText()));
             dto.setCategory(blankToNull(categoryField.getText()));
-            dto.setStartDate(startPicker.getValue());
-            dto.setEndDate(endPicker.getValue());
+            dto.setStartDate(readInstant(startPicker, startTimeField, "Start"));
+            dto.setEndDate(readInstant(endPicker, endTimeField, "End"));
+            dto.setTags(new LinkedHashSet<>(editTags));
             dto.setMetadata(collectMetadata());
             dto.setDependencies(dependenciesList.getItems().stream()
                     .filter(a -> dependencyChecks.containsKey(a.getId()) && dependencyChecks.get(a.getId()).get())

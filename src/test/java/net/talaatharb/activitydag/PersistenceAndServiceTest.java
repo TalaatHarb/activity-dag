@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -135,7 +135,7 @@ class PersistenceAndServiceTest {
         p = projects.save(p);
         ActivityModel a = activity(p, "A");
         a.setDurationUnit(DurationUnit.HOURS);
-        a.setStartDate(LocalDate.of(2026, 1, 2));
+        a.setStartDate(Instant.parse("2026-01-02T00:00:00Z"));
         a.getMetadata().put("owner", "me");
         a = activities.save(a);
         activities.save(activity(p, "B", a));
@@ -154,7 +154,7 @@ class PersistenceAndServiceTest {
         ActivityModel ib = imported.stream().filter(x -> x.getName().equals("B")).findFirst().orElseThrow();
         assertNotEquals(a.getId(), ia.getId());
         assertEquals(DurationUnit.HOURS, ia.getDurationUnit());
-        assertEquals(LocalDate.of(2026, 1, 2), ia.getStartDate());
+        assertEquals(Instant.parse("2026-01-02T00:00:00Z"), ia.getStartDate());
         assertEquals("me", ia.getMetadata().get("owner"));
         assertEquals(Set.of(ia.getId()), ib.getDependencies());
     }
