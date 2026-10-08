@@ -31,6 +31,13 @@
             <version>${javafx.version}</version>
         </dependency>
 
+        <!-- Calendar views (day/week/month) -->
+        <dependency>
+            <groupId>com.calendarfx</groupId>
+            <artifactId>view</artifactId>
+            <version>11.12.7</version>
+        </dependency>
+
         <!-- Dependency injection -->
         <dependency>
             <groupId>com.google.inject</groupId>
