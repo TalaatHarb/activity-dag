@@ -35,8 +35,11 @@ public class GraphTabController {
         this.context = context;
     }
 
+    @FXML private FilterBar filterBar;
+
     @FXML
     private void initialize() {
+        filterBar.init(context);
         context.getActivities().addListener((ListChangeListener<ActivityDto>) c -> draw());
         draw();
     }

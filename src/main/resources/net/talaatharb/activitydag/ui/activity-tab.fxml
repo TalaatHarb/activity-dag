@@ -16,9 +16,12 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import net.talaatharb.activitydag.ui.FilterBar?>
 
-<SplitPane dividerPositions="0.55" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-           fx:controller="net.talaatharb.activitydag.ui.ActivityTabController">
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.talaatharb.activitydag.ui.ActivityTabController">
+<FilterBar fx:id="filterBar"/>
+<SplitPane dividerPositions="0.55" VBox.vgrow="ALWAYS">
     <VBox spacing="8">
         <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
         <TableView fx:id="table" VBox.vgrow="ALWAYS">
@@ -29,6 +32,8 @@
                 <TableColumn fx:id="endColumn" text="End" prefWidth="95"/>
                 <TableColumn fx:id="resourcesColumn" text="Resources" prefWidth="80"/>
                 <TableColumn fx:id="impactColumn" text="Impact" prefWidth="70"/>
+                <TableColumn fx:id="statusColumn" text="Status" prefWidth="90"/>
+                <TableColumn fx:id="categoryColumn" text="Category" prefWidth="90"/>
                 <TableColumn fx:id="dependsOnColumn" text="Depends on" prefWidth="180"/>
             </columns>
         </TableView>
@@ -76,8 +81,13 @@
             <Label text="Impact" GridPane.rowIndex="8"/>
             <TextField fx:id="impactField" promptText="relative value, e.g. 1-100" GridPane.rowIndex="8"
                        GridPane.columnIndex="1"/>
+            <Label text="Status" GridPane.rowIndex="9"/>
+            <TextField fx:id="statusField" GridPane.rowIndex="9" GridPane.columnIndex="1"/>
+            <Label text="Category" GridPane.rowIndex="10"/>
+            <TextField fx:id="categoryField" GridPane.rowIndex="10" GridPane.columnIndex="1"/>
         </GridPane>
         <Button text="Save" defaultButton="true" onAction="#onSave"/>
     </VBox>
     </ScrollPane>
 </SplitPane>
+</VBox>

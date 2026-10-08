@@ -38,7 +38,7 @@ public class ActivityTransferService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ActivityJson(String name, String description, long duration, DurationUnit durationUnit,
             LocalDate startDate, LocalDate endDate, int resources, int impact, Map<String, String> metadata,
-            List<String> dependsOn) {
+            List<String> dependsOn, String status, String category) {
     }
 
     private final ProjectService projectService;
@@ -86,6 +86,8 @@ public class ActivityTransferService {
             c.setEndDate(a.getEndDate());
             c.setResources(a.getResources());
             c.setImpact(a.getImpact());
+            c.setStatus(a.getStatus());
+            c.setCategory(a.getCategory());
             c.setMetadata(new HashMap<>(a.getMetadata()));
             Set<UUID> deps = new HashSet<>();
             a.getDependencies().stream().map(newIds::get).filter(id -> id != null).forEach(deps::add);
@@ -109,7 +111,7 @@ public class ActivityTransferService {
         List<ActivityJson> out = activities.stream().map(a -> new ActivityJson(a.getName(), a.getDescription(),
                 a.getDuration(), a.getDurationUnit(), a.getStartDate(), a.getEndDate(), a.getResources(),
                 a.getImpact(), new LinkedHashMap<>(a.getMetadata()),
-                a.getDependencies().stream().map(names::get).filter(n -> n != null).sorted().toList())).toList();
+                a.getDependencies().stream().map(names::get).filter(n -> n != null).sorted().toList(), a.getStatus(), a.getCategory())).toList();
         try {
             return json.writeValueAsString(out);
         } catch (JsonProcessingException e) {
@@ -150,6 +152,8 @@ public class ActivityTransferService {
             a.setEndDate(j.endDate());
             a.setResources(j.resources());
             a.setImpact(j.impact());
+            a.setStatus(j.status());
+            a.setCategory(j.category());
             a.setMetadata(j.metadata() == null ? new HashMap<>() : new HashMap<>(j.metadata()));
             Set<UUID> deps = new HashSet<>();
             for (String dep : j.dependsOn() == null ? List.<String>of() : j.dependsOn()) {

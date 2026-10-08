@@ -3,7 +3,9 @@ package net.talaatharb.activitydag.ui;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -42,6 +44,9 @@ public class ProjectContext {
 
     private final ObservableList<ProjectDto> projects = FXCollections.observableArrayList();
     private final ObservableList<ActivityDto> activities = FXCollections.observableArrayList();
+    private final ObservableList<ActivityDto> allActivities = FXCollections.observableArrayList();
+    private final javafx.collections.ObservableSet<String> hiddenStatuses = FXCollections.observableSet();
+    private final javafx.collections.ObservableSet<String> hiddenCategories = FXCollections.observableSet();
     private final ObjectProperty<ProjectDto> currentProject = new SimpleObjectProperty<>();
 
     @Inject
@@ -55,6 +60,8 @@ public class ProjectContext {
         this.projectMapper = projectMapper;
         this.activityMapper = activityMapper;
         currentProject.addListener((obs, old, now) -> reloadActivities());
+        hiddenStatuses.addListener((javafx.collections.SetChangeListener<String>) c -> applyFilters());
+        hiddenCategories.addListener((javafx.collections.SetChangeListener<String>) c -> applyFilters());
         if (projectService.findAll().isEmpty()) {
             createProject("Default project", "");
         }
@@ -62,7 +69,21 @@ public class ProjectContext {
     }
 
     public ObservableList<ProjectDto> getProjects() { return projects; }
+    /** Activities passing the status/category filters; this is what every view displays and calculates on. */
     public ObservableList<ActivityDto> getActivities() { return activities; }
+    /** Every activity of the current project regardless of filters. */
+    public ObservableList<ActivityDto> getAllActivities() { return allActivities; }
+    /** Statuses ("" stands for none) whose activities are hidden. */
+    public javafx.collections.ObservableSet<String> getHiddenStatuses() { return hiddenStatuses; }
+    /** Categories ("" stands for none) whose activities are hidden. */
+    public javafx.collections.ObservableSet<String> getHiddenCategories() { return hiddenCategories; }
+
+    public static String key(String value) { return value == null ? "" : value.trim(); }
+
+    private void applyFilters() {
+        activities.setAll(allActivities.stream().filter(a -> !hiddenStatuses.contains(key(a.getStatus()))
+                && !hiddenCategories.contains(key(a.getCategory()))).toList());
+    }
     public ObjectProperty<ProjectDto> currentProjectProperty() { return currentProject; }
     public ProjectDto getCurrentProject() { return currentProject.get(); }
 
@@ -80,10 +101,11 @@ public class ProjectContext {
     public void reloadActivities() {
         ProjectDto project = currentProject.get();
         if (project == null) {
-            activities.clear();
+            allActivities.clear();
         } else {
-            activities.setAll(activityMapper.toDtos(activityService.findByProject(project.getId())));
+            allActivities.setAll(activityMapper.toDtos(activityService.findByProject(project.getId())));
         }
+        applyFilters();
     }
 
     public ProjectDto createProject(String name, String description) {
@@ -157,6 +179,9 @@ public class ProjectContext {
 
     public PlanResult plan(String strategyName, LocalDate start) {
         List<ActivityModel> models = activityMapper.toModels(List.copyOf(activities));
+        Set<UUID> visible = new HashSet<>();
+        models.forEach(m -> visible.add(m.getId()));
+        models.forEach(m -> m.setDependencies(new HashSet<>(m.getDependencies().stream().filter(visible::contains).toList())));
         return planningService.plan(strategyName, models, start);
     }
 

@@ -48,8 +48,11 @@ public class PlanningTabController {
         this.context = context;
     }
 
+    @FXML private FilterBar filterBar;
+
     @FXML
     private void initialize() {
+        filterBar.init(context);
         strategyCombo.setItems(FXCollections.observableArrayList(context.strategyNames()));
         strategyCombo.getSelectionModel().selectFirst();
         startPicker.setValue(LocalDate.now());
