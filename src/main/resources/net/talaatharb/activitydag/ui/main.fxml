@@ -34,6 +34,9 @@
                 <Tab text="Kanban">
                     <content><fx:include source="kanban-tab.fxml"/></content>
                 </Tab>
+                <Tab text="Calendar">
+                    <content><fx:include source="calendar-tab.fxml"/></content>
+                </Tab>
                 <Tab text="Planning">
                     <content><fx:include source="planning-tab.fxml"/></content>
                 </Tab>
