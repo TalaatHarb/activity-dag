@@ -64,7 +64,14 @@ public class PlanningTabController {
         slackColumn.setCellValueFactory(c -> new SimpleStringProperty(DurationUnit.format(c.getValue().slack())));
         criticalColumn.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().critical() ? "Yes" : ""));
         context.currentProjectProperty().addListener((obs, old, now) -> clear());
-        context.getActivities().addListener((javafx.collections.ListChangeListener<Object>) c -> clear());
+        context.getAllActivities().addListener((javafx.collections.ListChangeListener<Object>) c -> clear());
+        context.getActivities().addListener((javafx.collections.ListChangeListener<Object>) c -> {
+            if (lastResult != null) {
+                onPlan();
+            } else {
+                clear();
+            }
+        });
         clear();
     }
 

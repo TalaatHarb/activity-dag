@@ -1,0 +1,102 @@
+.kanban-scroll, .kanban-scroll > .viewport, .kanban-board {
+    -fx-background-color: #e2e8f0;
+}
+
+.kanban-column {
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 10;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.10), 6, 0, 0, 2);
+}
+
+.kanban-column:drop-target {
+    -fx-background-color: #dbeafe;
+    -fx-border-color: -kanban-accent;
+}
+
+.kanban-column-header {
+    -fx-padding: 4 0 12 0;
+    -fx-border-color: -kanban-accent;
+    -fx-border-width: 0 0 3 0;
+}
+
+.kanban-heading {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.kanban-count {
+    -fx-background-color: -kanban-accent;
+    -fx-background-radius: 12;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 3 9;
+}
+
+.kanban-card {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 4, 0, 0, 1);
+    -fx-cursor: hand;
+}
+
+.kanban-card:hover {
+    -fx-border-color: -kanban-accent;
+    -fx-background-color: #fefefe;
+}
+
+.kanban-card-title {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.kanban-start, .kanban-tags-heading {
+    -fx-text-fill: #475569;
+    -fx-font-size: 12px;
+}
+
+.kanban-tags-heading {
+    -fx-font-weight: bold;
+}
+
+.kanban-status, .kanban-category, .kanban-metric, .kanban-tag {
+    -fx-background-radius: 6;
+    -fx-padding: 3 8;
+    -fx-font-size: 12px;
+}
+
+.kanban-status {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #1e40af;
+}
+
+.kanban-category {
+    -fx-background-color: #ede9fe;
+    -fx-text-fill: #5b21b6;
+}
+
+.kanban-metric {
+    -fx-background-color: #f1f5f9;
+    -fx-text-fill: #334155;
+}
+
+.kanban-tag {
+    -fx-background-color: #dcfce7;
+    -fx-text-fill: #166534;
+    -fx-background-radius: 12;
+}
+
+.kanban-empty {
+    -fx-padding: 20 8;
+    -fx-alignment: center;
+    -fx-text-fill: #64748b;
+    -fx-border-color: #cbd5e1;
+    -fx-border-style: dashed;
+    -fx-border-radius: 6;
+}

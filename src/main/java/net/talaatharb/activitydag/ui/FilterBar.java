@@ -48,7 +48,18 @@ public class FilterBar extends VBox {
             rebuild(categoryRow, context, ProjectContext::key, ActivityDto::getCategory, context.getHiddenCategories());
         };
         context.getAllActivities().addListener((ListChangeListener<ActivityDto>) c -> rebuild.run());
+        context.getHiddenStatuses().addListener((javafx.collections.SetChangeListener<String>) c ->
+                syncSelection(statusRow, context.getHiddenStatuses()));
+        context.getHiddenCategories().addListener((javafx.collections.SetChangeListener<String>) c ->
+                syncSelection(categoryRow, context.getHiddenCategories()));
         rebuild.run();
+    }
+
+    private static void syncSelection(HBox row, ObservableSet<String> hidden) {
+        for (var node : row.getChildren()) {
+            CheckBox box = (CheckBox) node;
+            box.setSelected(!hidden.contains((String) box.getUserData()));
+        }
     }
 
     private static void rebuild(HBox row, ProjectContext context, Function<String, String> key,
@@ -60,6 +71,7 @@ public class FilterBar extends VBox {
         row.getChildren().clear();
         for (String value : values) {
             CheckBox box = new CheckBox(value.isEmpty() ? "(none)" : value);
+            box.setUserData(value);
             box.setSelected(!hidden.contains(value));
             box.selectedProperty().addListener((obs, old, now) -> {
                 if (now) {

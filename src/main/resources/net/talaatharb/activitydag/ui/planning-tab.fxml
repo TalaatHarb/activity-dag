@@ -5,7 +5,6 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.SplitPane?>
 <?import net.talaatharb.activitydag.ui.graph.GanttChart?>
 <?import javafx.scene.control.TableColumn?>
@@ -28,9 +27,7 @@
     </HBox>
     <Label fx:id="summaryLabel"/>
     <SplitPane orientation="VERTICAL" dividerPositions="0.55" VBox.vgrow="ALWAYS">
-    <ScrollPane>
-        <GanttChart fx:id="ganttChart"/>
-    </ScrollPane>
+    <GanttChart fx:id="ganttChart"/>
     <TableView fx:id="resultTable">
         <columns>
             <TableColumn fx:id="nameColumn" text="Activity" prefWidth="200"/>

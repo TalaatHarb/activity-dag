@@ -1,81 +1,159 @@
 package net.talaatharb.activitydag.ui.graph;
 
-import javafx.scene.layout.Pane;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+import eu.dariolucia.jfx.timeline.Timeline;
+import eu.dariolucia.jfx.timeline.model.IRenderingContext;
+import eu.dariolucia.jfx.timeline.model.TaskItem;
+import eu.dariolucia.jfx.timeline.model.TaskLine;
+import eu.dariolucia.jfx.timeline.model.TimeInterval;
+import eu.dariolucia.jfx.timeline.model.TimePoint;
+import eu.dariolucia.jfx.timeline.model.TimePointType;
+import eu.dariolucia.jfx.timeline.model.TimeTooltip;
+import javafx.geometry.Insets;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
 import net.talaatharb.activitydag.model.DurationUnit;
 import net.talaatharb.activitydag.planning.PlanResult;
 import net.talaatharb.activitydag.planning.PlannedActivity;
 
-/**
- * Gantt chart: one row per activity (in plan order), a bar per activity along a time axis whose unit (hour, day or
- * week) adapts to the plan length; critical ones in red.
- */
-public class GanttChart extends Pane {
-    private static final double LABEL_W = 180;
-    private static final double ROW_H = 28;
-    private static final double BAR_H = 18;
-    private static final double HEADER_H = 28;
-    private static final double UNIT_W = 26;
-    private static final double PAD = 10;
+/** Read-only Timeline view of the planned schedule, including critical work, slack and milestones. */
+public class GanttChart extends BorderPane {
+    private static final Color CRITICAL = Color.web("#c62828");
+    private static final Color STANDARD = Color.web("#2563eb");
+    private static final Color SLACK = Color.web("#e2e8f0");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    private final Timeline timeline = new Timeline() {
+        @Override
+        public TaskItem getTaskItemAt(int index) {
+            // 0.9.1's selection model requests index -1 when clearing selection.
+            return index < 0 || index >= getTaskItemCount() ? null : super.getTaskItemAt(index);
+        }
+    };
+    private final Label empty = new Label("Choose a strategy and click Plan to see the schedule.");
+    private final Button fitButton = new Button("Fit schedule");
+    private Instant rangeStart;
+    private long rangeSeconds;
+
+    public GanttChart() {
+        timeline.setTaskPanelWidth(220);
+        timeline.setHeaderBackground(Color.web("#eef2f6"));
+        timeline.setPanelBackground(Color.web("#f8fafc"));
+        timeline.setHeaderForegroundColor(Color.web("#334155"));
+        timeline.setPanelForegroundColor(Color.web("#334155"));
+        timeline.setEnableAlternateColorLines(true);
+        timeline.setEnableVerticalLines(true);
+        timeline.setEnableZoomMouseScroll(true);
+        timeline.setHorizontalScrollbarVisible(true);
+        timeline.setVerticalScrollbarVisible(true);
+        timeline.setTextPadding(6);
+        timeline.setMinSize(0, 0);
+
+        fitButton.setOnAction(e -> fitSchedule());
+        HBox toolbar = new HBox(12, fitButton, legend("Critical", CRITICAL),
+                legend("Activity", STANDARD), legend("Slack", SLACK),
+                new Label("Scroll to navigate; Ctrl + scroll to zoom."));
+        toolbar.setPadding(new Insets(6));
+        toolbar.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        setTop(toolbar);
+        setMinSize(0, 0);
+        show(null);
+    }
+
+    private static Label legend(String text, Color color) {
+        Label label = new Label(text);
+        javafx.scene.shape.Rectangle swatch = new javafx.scene.shape.Rectangle(10, 10, color);
+        label.setGraphic(swatch);
+        return label;
+    }
 
     public void show(PlanResult result) {
-        getChildren().clear();
+        timeline.getSelectionModel().clearSelection();
+        timeline.getItems().clear();
+        fitButton.setDisable(result == null || result.activities().isEmpty());
         if (result == null || result.activities().isEmpty()) {
-            setMinSize(0, 0);
-            setPrefSize(0, 0);
+            rangeStart = null;
+            empty.setText(result == null ? "Choose a strategy and click Plan to see the schedule."
+                    : "No activities to schedule.");
+            setCenter(empty);
             return;
         }
-        int totalMinutes = Math.max(1, result.totalMinutes());
-        DurationUnit unit = totalMinutes <= 2 * DurationUnit.DAYS.minutes() ? DurationUnit.HOURS
-                : totalMinutes <= 120 * DurationUnit.DAYS.minutes() ? DurationUnit.DAYS : DurationUnit.WEEKS;
-        double perMinute = UNIT_W / unit.minutes();
-        int units = (int) Math.max(1, (totalMinutes + unit.minutes() - 1) / unit.minutes());
-        double width = PAD + LABEL_W + units * UNIT_W + PAD;
-        double height = HEADER_H + result.activities().size() * ROW_H + PAD;
-        int rows = result.activities().size();
 
-        for (int u = 0; u <= units; u++) {
-            double x = PAD + LABEL_W + u * UNIT_W;
-            Line grid = new Line(x, HEADER_H - 6, x, HEADER_H + rows * ROW_H);
-            grid.setStroke(Color.gray(0.88));
-            getChildren().add(grid);
-            if (u < units && (units <= 40 || u % 5 == 0)) {
-                Text tick = new Text(x + 3, HEADER_H - 10, Integer.toString(u));
-                tick.setFill(Color.DIMGRAY);
-                getChildren().add(tick);
-            }
+        List<TaskLine> lines = new ArrayList<>();
+        Instant first = null;
+        Instant last = null;
+        for (PlannedActivity activity : result.activities()) {
+            // Timeline's axis is UTC. Encode the planner's calendar times as UTC to match the result table,
+            // without introducing a system-zone/DST shift into its continuous-calendar schedule.
+            Instant start = activity.start().toInstant(ZoneOffset.UTC);
+            Instant end = activity.end().toInstant(ZoneOffset.UTC);
+            Instant slackEnd = end.plusSeconds(activity.slack() * 60L);
+            first = first == null || start.isBefore(first) ? start : first;
+            last = last == null || slackEnd.isAfter(last) ? slackEnd : last;
+            lines.add(taskLine(activity, start, end, slackEnd));
         }
-        String axisName = switch (unit) {
-            case HOURS -> "Hour";
-            case WEEKS -> "Week";
-            default -> "Day";
-        };
-        Text axis = new Text(PAD, HEADER_H - 10, axisName);
-        axis.setFill(Color.DIMGRAY);
-        getChildren().add(axis);
+        long span = Math.max(60, Duration.between(first, last).getSeconds());
+        long padding = Math.max(60, span / 20);
+        rangeStart = first.minusSeconds(padding);
+        rangeSeconds = span + 2 * padding;
+        timeline.setMinTime(rangeStart);
+        timeline.setMaxTime(rangeStart.plusSeconds(rangeSeconds));
+        fitSchedule();
+        timeline.getItems().setAll(lines);
+        setCenter(timeline);
+    }
 
-        int row = 0;
-        for (PlannedActivity p : result.activities()) {
-            double y = HEADER_H + row * ROW_H;
-            Text name = new Text(PAD, y + ROW_H / 2 + 4, p.name());
-            double barX = PAD + LABEL_W + p.startOffset() * perMinute;
-            double barW = Math.max(3, (p.endOffset() - p.startOffset()) * perMinute);
-            Rectangle bar = new Rectangle(barX, y + (ROW_H - BAR_H) / 2, barW, BAR_H);
-            bar.setArcWidth(6);
-            bar.setArcHeight(6);
-            bar.setFill(p.critical() ? Color.web("#d93025") : Color.web("#3367d6"));
-            if (!p.critical() && p.slack() > 0) {
-                Rectangle slack = new Rectangle(barX + barW, bar.getY() + BAR_H / 2 - 1, p.slack() * perMinute, 2);
-                slack.setFill(Color.gray(0.6));
-                getChildren().add(slack);
-            }
-            getChildren().addAll(name, bar);
-            row++;
+    private static TaskLine taskLine(PlannedActivity activity, Instant start, Instant end, Instant slackEnd) {
+        String details = activity.name() + "\nStart: " + TIME_FORMAT.format(activity.start())
+                + "\nEnd: " + TIME_FORMAT.format(activity.end())
+                + "\nResources: " + activity.resources()
+                + "\nImpact: " + String.format(Locale.ROOT, "%.1f%%", activity.impactPercent())
+                + "\nSlack: " + DurationUnit.format(activity.slack())
+                + (activity.critical() ? "\nCritical path" : "");
+        TaskLine line = new TaskLine(activity.name(), details);
+        TaskItem item = new TaskItem(activity.name(), start, Duration.between(start, end).getSeconds());
+        Color color = activity.critical() ? CRITICAL : STANDARD;
+        item.setTaskBackground(color);
+        item.setTaskTextColor(Color.WHITE);
+        item.setTooltip(new TimeTooltip(details));
+        item.setUserData(activity.id());
+        if (start.equals(end)) {
+            TimePoint milestone = new TimePoint("", start, TimePointType.CIRCLE) {
+                @Override
+                protected void render(GraphicsContext gc, IRenderingContext rc, int x, int y,
+                        int width, int height) {
+                    // 0.9.1 clips time points to their parent duration, which is zero for a milestone.
+                    super.render(gc, rc, x, y, Math.max(8, width), height);
+                }
+            };
+            milestone.setColor(color);
+            milestone.setTooltip(new TimeTooltip(details + "\nMilestone (zero duration)"));
+            item.getTimePoints().add(milestone);
         }
-        setMinSize(width, height);
-        setPrefSize(width, height);
+        line.getItems().add(item);
+        if (activity.slack() > 0) {
+            TimeInterval slack = new TimeInterval(end, slackEnd);
+            slack.setColor(SLACK);
+            line.getIntervals().add(slack);
+        }
+        return line;
+    }
+
+    private void fitSchedule() {
+        if (rangeStart != null) {
+            timeline.setViewPortDuration(rangeSeconds);
+            timeline.setViewPortStart(rangeStart);
+        }
     }
 }

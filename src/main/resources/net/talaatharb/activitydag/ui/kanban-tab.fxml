@@ -10,6 +10,7 @@
 <?import net.talaatharb.activitydag.ui.FilterBar?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      stylesheets="@kanban.css"
       fx:controller="net.talaatharb.activitydag.ui.KanbanTabController">
     <FilterBar fx:id="filterBar"/>
     <HBox spacing="10" alignment="CENTER_LEFT">
@@ -20,9 +21,9 @@
         </RadioButton>
         <RadioButton fx:id="categoryRadio" text="Category" toggleGroup="$fieldGroup"/>
     </HBox>
-    <ScrollPane fx:id="scroll" fitToHeight="true" VBox.vgrow="ALWAYS">
-        <HBox fx:id="board" spacing="10">
-            <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+    <ScrollPane fx:id="scroll" fitToHeight="true" VBox.vgrow="ALWAYS" styleClass="kanban-scroll">
+        <HBox fx:id="board" spacing="18" styleClass="kanban-board">
+            <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
         </HBox>
     </ScrollPane>
 </VBox>

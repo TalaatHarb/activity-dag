@@ -16,9 +16,16 @@
         <javafx.version>21.0.5</javafx.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <jackson.version>2.17.2</jackson.version>
+        <timeline.version>0.9.1</timeline.version>
     </properties>
 
     <dependencies>
+        <!-- Keep Base aligned with Controls/Graphics; Timeline also declares an older Base directly. -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -36,6 +43,12 @@
             <groupId>com.calendarfx</groupId>
             <artifactId>view</artifactId>
             <version>11.12.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>eu.dariolucia.jfx</groupId>
+            <artifactId>eu.dariolucia.jfx.timeline</artifactId>
+            <version>${timeline.version}</version>
         </dependency>
 
         <!-- Dependency injection -->
