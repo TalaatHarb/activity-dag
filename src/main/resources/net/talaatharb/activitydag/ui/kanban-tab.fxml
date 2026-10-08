@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import net.talaatharb.activitydag.ui.FilterBar?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.talaatharb.activitydag.ui.KanbanTabController">
+    <FilterBar fx:id="filterBar"/>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <padding><Insets top="4" right="8" bottom="4" left="8"/></padding>
+        <Label text="Columns by:"/>
+        <RadioButton fx:id="statusRadio" text="Status" selected="true">
+            <toggleGroup><ToggleGroup fx:id="fieldGroup"/></toggleGroup>
+        </RadioButton>
+        <RadioButton fx:id="categoryRadio" text="Category" toggleGroup="$fieldGroup"/>
+    </HBox>
+    <ScrollPane fx:id="scroll" fitToHeight="true" VBox.vgrow="ALWAYS">
+        <HBox fx:id="board" spacing="10">
+            <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+        </HBox>
+    </ScrollPane>
+</VBox>
