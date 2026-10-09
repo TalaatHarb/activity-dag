@@ -168,6 +168,23 @@ public class ProjectContext {
         return saved;
     }
 
+    public List<ActivityDto> activitiesForProject(UUID projectId) {
+        return activityMapper.toDtos(activityService.findByProject(projectId));
+    }
+
+    /** Calendar edits change only timing, preserving the activity's owner and other saved fields. */
+    public void updateActivityTiming(UUID activityId, UUID projectId, Instant start, Instant end) {
+        ActivityModel activity = activityService.findById(activityId)
+                .orElseThrow(() -> new IllegalArgumentException("Activity no longer exists"));
+        if (!projectId.equals(activity.getProjectId())) {
+            throw new IllegalArgumentException("Activity does not belong to the expected project");
+        }
+        activity.setStartDate(start);
+        activity.setEndDate(end);
+        activityService.save(activity);
+        reloadActivities();
+    }
+
     public void deleteActivity(UUID id) {
         activityService.delete(id);
         reloadActivities();

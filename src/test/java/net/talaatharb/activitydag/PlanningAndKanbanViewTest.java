@@ -301,6 +301,149 @@ class PlanningAndKanbanViewTest {
         }
     }
 
+    @Test
+    void calendarCombinesProjectsAndSavesTimingToOriginalOwner() throws Exception {
+        var injector = Guice.createInjector(new AppModule(dir.resolve("multi-project.db")));
+        try {
+            onFxThread(() -> {
+                ProjectContext context = injector.getInstance(ProjectContext.class);
+                var firstProject = context.getCurrentProject();
+                Instant day = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+                ActivityDto first = savedActivity(context, "First task", "Open", "Work", day.plusSeconds(3600));
+                var secondProject = context.createProject("Second project", "");
+                ActivityDto prerequisite = savedActivity(context, "Prerequisite", "Other status", "Other category",
+                        day.plusSeconds(7200));
+                ActivityDto second = savedActivity(context, "Second task", "Other status", "Other category",
+                        day.plusSeconds(10800));
+                second.getDependencies().add(prerequisite.getId());
+                second.getMetadata().put("owner", "second");
+                second.getTags().add("keep");
+                context.saveActivity(second);
+                context.currentProjectProperty().set(firstProject);
+                try {
+                    FXMLLoader loader = viewLoader("calendar-tab.fxml", injector);
+                    Parent root = loader.load();
+                    new Scene(root, 1000, 600);
+                    root.applyCss();
+                    root.layout();
+                    VBox checks = (VBox) loader.getNamespace().get("projectChecks");
+                    assertEquals(2, checks.getChildren().size());
+                    assertEquals(1, checks.getChildren().stream().map(CheckBox.class::cast)
+                            .filter(CheckBox::isSelected).count());
+                    CheckBox secondCheck = checks.getChildren().stream().map(CheckBox.class::cast)
+                            .filter(check -> check.getUserData().equals(secondProject.getId())).findFirst().orElseThrow();
+                    StackPane pane = (StackPane) loader.getNamespace().get("viewPane");
+                    DateControl view = (DateControl) pane.getChildren().get(0);
+                    var source = view.getCalendarSources().get(0);
+                    assertEquals(1, source.getCalendars().size());
+                    secondCheck.fire();
+                    root.applyCss();
+                    root.layout();
+                    assertEquals(2, source.getCalendars().size());
+                    assertEquals(firstProject.getId(), context.getCurrentProject().getId());
+                    assertEquals(List.of(first.getId()),
+                            context.getActivities().stream().map(ActivityDto::getId).toList());
+                    assertTrue(filterBox((Parent) loader.getNamespace().get("filterBar"), "Other status").isSelected());
+                    com.calendarfx.model.Calendar<?> secondCalendar = source.getCalendars().stream()
+                            .filter(c -> c.getName().equals("Second project")).findFirst().orElseThrow();
+                    var entries = secondCalendar.findEntries(LocalDate.now(), LocalDate.now(), ZoneId.systemDefault())
+                            .values().stream().flatMap(List::stream).toList();
+                    assertEquals(2, entries.size());
+                    var entry = entries.stream().filter(e -> e.getTitle().equals("Second task")).findFirst().orElseThrow();
+                    Instant newStart = day.plusSeconds(14400);
+                    Instant newEnd = day.plusSeconds(18000);
+                    entry.setInterval(newStart.atZone(ZoneId.systemDefault()), newEnd.atZone(ZoneId.systemDefault()));
+                    // Changing project visibility must save pending drag/resize changes before rebuilding.
+                    secondCheck.fire();
+                    ActivityDto saved = context.activitiesForProject(secondProject.getId()).stream()
+                            .filter(a -> a.getId().equals(second.getId())).findFirst().orElseThrow();
+                    assertEquals(secondProject.getId(), saved.getProjectId());
+                    assertEquals(newStart, saved.getStartDate());
+                    assertEquals(newEnd, saved.getEndDate());
+                    assertEquals(second.getDependencies(), saved.getDependencies());
+                    assertEquals("second", saved.getMetadata().get("owner"));
+                    assertEquals(second.getTags(), saved.getTags());
+                    assertEquals(first.getStartDate(), context.activitiesForProject(firstProject.getId()).get(0).getStartDate());
+                    assertEquals(1, source.getCalendars().size());
+                    secondCheck.fire();
+                    context.getHiddenStatuses().add("Other status");
+                    assertEquals(0, secondCalendar.findEntries(LocalDate.now(), LocalDate.now(), ZoneId.systemDefault())
+                            .values().stream().mapToInt(List::size).sum());
+                    context.getHiddenStatuses().clear();
+                    assertEquals(2, secondCalendar.findEntries(LocalDate.now(), LocalDate.now(), ZoneId.systemDefault())
+                            .values().stream().mapToInt(List::size).sum());
+
+                    secondProject.setName("Renamed project");
+                    context.updateProject(secondProject);
+                    assertEquals(secondProject.getId(), context.getCurrentProject().getId());
+                    assertEquals(1, checks.getChildren().stream().map(CheckBox.class::cast)
+                            .filter(CheckBox::isSelected).count());
+                    assertEquals("Renamed project", source.getCalendars().get(0).getName());
+                    context.deleteCurrentProject();
+                    assertEquals(1, checks.getChildren().size());
+                    assertTrue(((CheckBox) checks.getChildren().get(0)).isSelected());
+                    ((CheckBox) checks.getChildren().get(0)).fire();
+                    assertTrue(source.getCalendars().isEmpty());
+                } catch (java.io.IOException e) {
+                    throw new AssertionError("Calendar view did not load", e);
+                }
+            });
+        } finally {
+            injector.getInstance(MapDbStorage.class).close();
+        }
+    }
+
+    @Test
+    void calendarDelayedSaveKeepsOtherProjectSelectedAndReloadsItsEntries() throws Exception {
+        var injector = Guice.createInjector(new AppModule(dir.resolve("delayed-calendar.db")));
+        CountDownLatch saved = new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<ActivityDto> original = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicReference<com.calendarfx.model.Calendar<?>> calendar =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        Instant newStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().plusSeconds(18000);
+        try {
+            onFxThread(() -> {
+                ProjectContext context = injector.getInstance(ProjectContext.class);
+                var current = context.getCurrentProject();
+                savedActivity(context, "Current task", "Open", "Work", newStart);
+                context.createProject("Overlay", "");
+                original.set(savedActivity(context, "Overlay task", "Open", "Work", newStart.minusSeconds(3600)));
+                context.currentProjectProperty().set(current);
+                try {
+                    FXMLLoader loader = viewLoader("calendar-tab.fxml", injector);
+                    loader.load();
+                    VBox checks = (VBox) loader.getNamespace().get("projectChecks");
+                    checks.getChildren().stream().map(CheckBox.class::cast)
+                            .filter(check -> !check.isSelected()).findFirst().orElseThrow().fire();
+                    DateControl view = (DateControl) ((StackPane) loader.getNamespace().get("viewPane")).getChildren().get(0);
+                    calendar.set(view.getCalendarSources().get(0).getCalendars().stream()
+                            .filter(c -> c.getName().equals("Overlay")).findFirst().orElseThrow());
+                    var entry = calendar.get().findEntries(LocalDate.now(), LocalDate.now(), ZoneId.systemDefault())
+                            .values().stream().flatMap(List::stream).findFirst().orElseThrow();
+                    context.getAllActivities().addListener((javafx.collections.ListChangeListener<ActivityDto>) c ->
+                            saved.countDown());
+                    entry.setInterval(newStart.atZone(ZoneId.systemDefault()),
+                            newStart.plusSeconds(3600).atZone(ZoneId.systemDefault()));
+                } catch (java.io.IOException e) {
+                    throw new AssertionError(e);
+                }
+            });
+            assertTrue(saved.await(10, TimeUnit.SECONDS), "Calendar edit must save after the debounce delay");
+            onFxThread(() -> {
+                ProjectContext context = injector.getInstance(ProjectContext.class);
+                ActivityDto reloaded = context.activitiesForProject(original.get().getProjectId()).get(0);
+                assertEquals(newStart, reloaded.getStartDate());
+                assertEquals(newStart.plusSeconds(3600), reloaded.getEndDate());
+                assertFalse(reloaded.getProjectId().equals(context.getCurrentProject().getId()));
+                var entry = calendar.get().findEntries(LocalDate.now(), LocalDate.now(), ZoneId.systemDefault())
+                        .values().stream().flatMap(List::stream).findFirst().orElseThrow();
+                assertEquals(newStart, entry.getStartAsZonedDateTime().toInstant());
+            });
+        } finally {
+            injector.getInstance(MapDbStorage.class).close();
+        }
+    }
+
     private static ActivityDto savedActivity(ProjectContext context, String name, String status, String category,
             Instant start) {
         ActivityDto activity = new ActivityDto();

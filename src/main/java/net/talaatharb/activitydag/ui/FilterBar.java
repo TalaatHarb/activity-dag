@@ -6,6 +6,7 @@ import java.util.function.Function;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableSet;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.CheckBox;
@@ -43,11 +44,15 @@ public class FilterBar extends VBox {
     }
 
     public void init(ProjectContext context) {
+        init(context, context.getAllActivities());
+    }
+
+    public void init(ProjectContext context, ObservableList<ActivityDto> availableActivities) {
         Runnable rebuild = () -> {
-            rebuild(statusRow, context, ProjectContext::key, ActivityDto::getStatus, context.getHiddenStatuses());
-            rebuild(categoryRow, context, ProjectContext::key, ActivityDto::getCategory, context.getHiddenCategories());
+            rebuild(statusRow, availableActivities, ProjectContext::key, ActivityDto::getStatus, context.getHiddenStatuses());
+            rebuild(categoryRow, availableActivities, ProjectContext::key, ActivityDto::getCategory, context.getHiddenCategories());
         };
-        context.getAllActivities().addListener((ListChangeListener<ActivityDto>) c -> rebuild.run());
+        availableActivities.addListener((ListChangeListener<ActivityDto>) c -> rebuild.run());
         context.getHiddenStatuses().addListener((javafx.collections.SetChangeListener<String>) c ->
                 syncSelection(statusRow, context.getHiddenStatuses()));
         context.getHiddenCategories().addListener((javafx.collections.SetChangeListener<String>) c ->
@@ -62,12 +67,12 @@ public class FilterBar extends VBox {
         }
     }
 
-    private static void rebuild(HBox row, ProjectContext context, Function<String, String> key,
+    private static void rebuild(HBox row, ObservableList<ActivityDto> availableActivities, Function<String, String> key,
             Function<ActivityDto, String> getter, ObservableSet<String> hidden) {
         Set<String> values = new TreeSet<>();
         values.add("");
         values.addAll(hidden);
-        context.getAllActivities().forEach(a -> values.add(key.apply(getter.apply(a))));
+        availableActivities.forEach(a -> values.add(key.apply(getter.apply(a))));
         row.getChildren().clear();
         for (String value : values) {
             CheckBox box = new CheckBox(value.isEmpty() ? "(none)" : value);

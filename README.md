@@ -50,7 +50,11 @@ Cards are ordered by **earliest start date first**, with unscheduled work last a
 
 View activities in **3-day, week or month** layouts powered by [CalendarFX](https://github.com/dlsc-software-consulting-gmbh/CalendarFX). The 3-day view starts with yesterday, today and tomorrow and moves one day at a time.
 
+Use the **scrollable Projects checklist on the left** to overlay activities from multiple projects, each with its own calendar color. Only the current project is selected initially; switching the project in the top bar resets this selection. You can select any combination, or deselect all projects. Status/category filters apply to all selected projects, and the calendar's filter choices include their values.
+
 Drag activities to move them, or resize their edges to change start/end times. Only activities with a start or end date appear in the calendar.
+
+Timing edits save to the activity's original project, even when it is not selected in the top bar. Other tabs continue to show only the current project's activities.
 
 ![Calendar tab showing a three-day schedule with meetings and milestones on October 12](img/calendar.PNG)
 
